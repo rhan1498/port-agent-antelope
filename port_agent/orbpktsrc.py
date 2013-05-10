@@ -13,6 +13,7 @@ release the GIL when entering Antelope C functions. E.g.
 from contextlib import contextmanager
 from cPickle import dumps
 import os
+from weakref import proxy
 
 from gevent import Greenlet
 from gevent.threadpool import ThreadPool, wrap_errors
@@ -87,15 +88,9 @@ class OrbPktSrc(Greenlet):
         """
         queue = Queue()
         self._queues.add(queue)
-        yield queue
+        yield proxy(queue)
 
         # Stop publishing
         self._queues.remove(queue)
-
-        # Flush queue; is this really necessary?
-        try:
-            while True:
-                queue.get(block=False)
-        except Empty:
-            pass
+        return
 

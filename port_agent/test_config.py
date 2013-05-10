@@ -40,6 +40,7 @@ class Test_readConfig(unittest.TestCase):
         self.cfg.heartbeat_interval = 1
         self.cfg.command_port = 1
         self.cfg.data_port = 1
+        self.cfg.antelope_orb_name = ''
         self.assertTrue(self.cfg.isConfigured())
 
 if __name__ == '__main__':

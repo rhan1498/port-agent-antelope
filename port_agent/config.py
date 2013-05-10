@@ -9,6 +9,9 @@ class Config(object):
         'data_port': (int, None),
         'pid_dir': (str, "/tmp"),
         'log_level': (str, 'warn'),
+        'antelope_orb_name': (str, None),
+        'antelope_orb_select': (str, None),
+        'antelope_orb_reject': (str, None),
     }
 
     def __init__(self, options, cmdproc):
@@ -32,5 +35,5 @@ class Config(object):
 
     def isConfigured(self):
         return None not in (self.heartbeat_interval, self.command_port,
-                            self.data_port)
+                            self.data_port, self.antelope_orb_name)
 

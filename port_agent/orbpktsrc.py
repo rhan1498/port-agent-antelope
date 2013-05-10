@@ -79,6 +79,10 @@ class OrbPktSrc(Greenlet):
         """This context manager returns a Queue object from which the
         subscriber can get pickled orb packets.
 
+        The returned object is actually a weakref proxy to the real Queue. This
+        ensures that the real Queue is destroyed as soon as the context exits,
+        as nobody but the context manager has the real reference.
+
         Example::
 
             with orbpktsrc.subscription() as queue:
@@ -92,5 +96,4 @@ class OrbPktSrc(Greenlet):
 
         # Stop publishing
         self._queues.remove(queue)
-        return
 

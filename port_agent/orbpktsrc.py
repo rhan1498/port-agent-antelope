@@ -33,21 +33,31 @@ if 'ANTELOPE_PYTHON_GILRELEASE' not in os.environ:
 class OrbPktSrc(Greenlet):
     """Gevent based orb packet publisher.
 
+    :param transformation: Optional transformation function
+    :type transformation: `func`
+
     Gets packets from an orbreap thread in a non-blocking fashion using the
-    gevent threadpool functionality, serializes them using Pickle and publishes
-    to subscribers.
+    gevent threadpool functionality, and publishes them to subscribers.
 
-    Due to the security issues surrounding pickle, we should consider either
-    using a different serialization protocol, or using pickle in conjuction
-    HMAC or some other secure cryptographic signing mechanism.
+    The transformation function should take a single argument, the unstuffed Packet
+    object. It's return value is placed into the queue.
+
+    Transformation function example::
+
+        from pickle import dumps
+
+        def transform(packet):
+            return dumps(packet)
+
     """
-
-    def __init__(self, srcname, select, reject):
+    def __init__(self, srcname, select=None, reject=None, after=-1, timeout=-1,
+                 queuesize=100, transformation=None):
         Greenlet.__init__(self)
         self.srcname = srcname
         self.select = select
         self.reject = reject
         self._queues = set()
+        self.transformation = transformation
 
     def _run(self):
         threadpool = ThreadPool(maxsize=1)
@@ -70,9 +80,10 @@ class OrbPktSrc(Greenlet):
     def _publish(self, r):
         pktid, srcname, timestamp, raw_packet = r
         packet = Packet(srcname, timestamp, raw_packet)
-        buf = dumps(packet)
+        if self.transformation is not None:
+            packet = self.transformation(packet)
         for queue in self._queues:
-            queue.put(buf)
+            queue.put(packet)
 
     @contextmanager
     def subscription(self):

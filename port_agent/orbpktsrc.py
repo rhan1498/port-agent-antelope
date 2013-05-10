@@ -24,16 +24,21 @@ from antelope.Pkt import Packet
 
 class GilReleaseNotSetError(Exception): pass
 
+
 if 'ANTELOPE_PYTHON_GILRELEASE' not in os.environ:
     raise GilReleaseNotSetError("ANTELOPE_PYTHON_GILRELEASE not in environment")
+
 
 class OrbPktSrc(Greenlet):
     """Gevent based orb packet publisher.
 
     Gets packets from an orbreap thread in a non-blocking fashion using the
-    gevent threadpool functionality, serializes them using Pickle (maybe
-    something else later? Pickle has serious security issues.) and publishes
+    gevent threadpool functionality, serializes them using Pickle and publishes
     to subscribers.
+
+    Due to the security issues surrounding pickle, we should consider either
+    using a different serialization protocol, or using pickle in conjuction
+    HMAC or some other secure cryptographic signing mechanism.
     """
 
     def __init__(self, srcname, select, reject):
@@ -70,6 +75,16 @@ class OrbPktSrc(Greenlet):
 
     @contextmanager
     def subscription(self):
+        """This context manager returns a Queue object from which the
+        subscriber can get pickled orb packets.
+
+        Example::
+
+            with orbpktsrc.subscription() as queue:
+                while True:
+                    pickledpacket = queue.get()
+                    ...
+        """
         queue = Queue()
         self._queues.add(queue)
         yield queue

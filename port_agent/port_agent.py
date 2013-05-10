@@ -42,32 +42,6 @@ DEFAULTS = dict(
 )
 
 
-class PortAgentConfig(object):
-    cmds = {
-        'heartbeat_interval': (int, None),
-        'command_port': (int, None),
-        'data_port': (int, None),
-        'pid_dir': (str, "/tmp"),
-        'log_level': (str, 'warn'),
-    }
-
-    def __init__(self, options, cmdproc):
-        for name, (converter, default) in self.cmds.iteritems():
-            # Initialize attr with default val
-            setattr(self, name, default)
-            # Create command to set attr
-            cmdproc.setCmd(name, converter, lambda val: setattr(self, name, val))
-
-        # update from config file
-        if hasattr(options, 'conffile'):
-            self.readConfig(options.conffile)
-        # update from command line
-
-    def readConfig(self, conffile):
-        with open(conffile, 'rU') as file:
-            for line in file:
-                self.cmdproc.process(line)
-
 
 COMMAND_SENTINEL = object()
 
@@ -104,30 +78,6 @@ class PortAgent(object):
     def shutdown(self, protocol):
         print "shutdown"
 
-
-from orbreapthr import OrbreapThr
-
-
-class OrbPktSrc(OrbReapThr):
-    def __init__(self, srcname, select, reject):
-        self.source = OrbreapThr(srcname, select, reject, timeout=1)
-        self.source.orbname = srcname
-
-    def get(self):
-        d = self.source.get()
-        d.addCallbacks(self.on_get, errback=self.on_get_error)
-        return d
-
-    def on_get_error(self, failure):
-        failure.trap(Timeout, NoData)
-        return self.get(source)
-
-    def on_get(self, pkt):
-        # unstuff
-        # do something; send to connected port agent clients
-        r = self.update(pfdict)
-        self.get()
-        return r
 
 
 

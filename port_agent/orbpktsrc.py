@@ -75,7 +75,7 @@ class OrbPktSrc(Greenlet):
         yield queue
 
         # Stop publishing
-        del self._queues[queue]
+        self._queues.remove(queue)
 
         # Flush queue; is this really necessary?
         try:
@@ -83,9 +83,4 @@ class OrbPktSrc(Greenlet):
                 queue.get(block=False)
         except Empty:
             pass
-
-    def unsubscribe(self, queue):
-        # Could we use some sort of context manager to guarantee that queues
-        # are always unsubscribed and never left dangling? Without a max size,
-        # a dangling queue would eventually exhaust the heap.
 

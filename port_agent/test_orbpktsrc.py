@@ -12,10 +12,13 @@ def clock():
         print 'tick'
         gevent.sleep(0.25)
 
+
 def subscriber():
+    print 'Subscribing'
     with s.subscription() as q:
-        while True:
-            print q.get()[:75]
+        for n in xrange(3):
+            print repr(q.get()[:75])
+    print 'Cancelled subscription'
 
 gevent.spawn(clock)
 gevent.spawn(subscriber)

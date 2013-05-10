@@ -28,6 +28,9 @@ class Config(object):
     def readConfig(self, conffile):
         with open(conffile, 'rU') as file:
             for line in file:
-                print line
                 self.cmdproc.processCmd(line)
+
+    def isConfigured(self):
+        return None not in (self.heartbeat_interval, self.command_port,
+                            self.data_port)
 

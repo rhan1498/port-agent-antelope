@@ -35,6 +35,13 @@ class Test_readConfig(unittest.TestCase):
             self.cfg.readConfig(tmpfile.name)
         self.assertEquals(self.cfg.heartbeat_interval, 123)
 
+    def test_isConfigured(self):
+        self.assertFalse(self.cfg.isConfigured())
+        self.cfg.heartbeat_interval = 1
+        self.cfg.command_port = 1
+        self.cfg.data_port = 1
+        self.assertTrue(self.cfg.isConfigured())
+
 if __name__ == '__main__':
     unittest.main()
 

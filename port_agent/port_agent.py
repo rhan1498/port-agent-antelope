@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-from twisted.internet import reactor
+
+import sys
+from optparse import OptionParser
 
 
 STATE_UNKNOWN          = 0x00000000
@@ -79,72 +81,6 @@ class PortAgent(object):
         print "shutdown"
 
 
-
-
-
-from twisted.internet import reactor, protocol
-from twisted.protocols.basic import LineReceiver
-
-class CmdProtocol(LineReceiver):
-    def __init__(self, factory):
-        self.factory = factory
-
-    def connectionMade(self):
-        # log something
-        pass
-
-    def connectionLost(self, reason):
-        # log something
-        pass
-
-    def lineReceived(self, line):
-        # handle command
-        pass
-
-class CmdFactory(protocol.Factory):
-    def __init__(self):
-        pass
-
-    def buildProtocol(self, addr):
-        return CmdProtocol(self)
-
-# reactor.listenTCP(config.cmd_port, CmdFactory())
-
-
-class DataProtocol(basic.LineReceiver):
-    def __init__(self, factory):
-        self.factory = factory
-
-    def connectionMade(self):
-        self.factory.clients.add(self)
-
-    def connectionLost(self, reason):
-        self.factory.clients.remove(self)
-
-    def sendPkt(self, pkt):
-        self.transport.write(pkt)
-
-class DataFactory(protocol.Factory):
-    def __init__(self):
-        self.clients = set()
-
-    def buildProtocol(self, addr):
-        return DataProtocol(self)
-
-    def sendPkt(self, pkt):
-        for c in self.clients:
-            c.sendPkt(pkt)
-
-
-# datafactory = DataFactory()
-# reactor.listenTCP(config.cmd_port, datafactory)
-
-#!/usr/bin/env python
-
-import sys
-from optparse import OptionParser
-
-from port_agent.port_agent import PortAgent
 
 def main(args=None):
     if args is None:

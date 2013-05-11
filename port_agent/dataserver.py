@@ -45,3 +45,26 @@ class DataServer(StreamServer):
         finally:
             sock.close()
 
+class CmdServer(StreamServer):
+    def __init__(self, cfg, cmdproc):
+        self.cfg = cfg
+        self.cmdproc = cmdproc
+        super(CmdServer, self).__init__(
+            listener = ('localhost', cfg.command_port),
+            spawn = POOL_SIZE
+        )
+
+    def handle(self, sock, addr):
+        try:
+            while True:
+                buf = bytearray()
+                while len(buf) < 16:
+                    sock.recv_into(buf, 16 - len(buf))
+                pkt = ReceivedPacket(buf)
+                while len(buf) < pkt.pktsize:
+                    sock.recv_into(buf, pkt.pktsize - len(buf))
+                pkt.validate()
+                for cmd in pkt.data.split():
+                    self.cmdproc.processCmd(cmd)
+        finally:
+            sock.close()

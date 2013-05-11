@@ -22,6 +22,8 @@ from gevent.queue import Queue, Empty
 from antelope.brttpkt import OrbreapThr, Timeout, NoData
 from antelope.Pkt import Packet
 
+import ntp
+
 
 class GilReleaseNotSetError(Exception): pass
 
@@ -67,6 +69,7 @@ class OrbPktSrc(Greenlet):
                 try:
                     success, value = threadpool.spawn(
                             wrap_errors, (Exception,), orbreapthr.get, [], {}).get()
+                    timestamp = ntp.now()
                     if not success:
                         raise value
                 except (Timeout, NoData):
@@ -75,15 +78,15 @@ class OrbPktSrc(Greenlet):
                 else:
                     if value is None:
                         raise Exception('Nothing to publish')
-                    self._publish(value)
+                    self._publish(value, timestamp)
 
-    def _publish(self, r):
-        pktid, srcname, timestamp, raw_packet = r
-        packet = Packet(srcname, timestamp, raw_packet)
+    def _publish(self, r, timestamp):
+        pktid, srcname, orbtimestamp, raw_packet = r
+        packet = Packet(srcname, orbtimestamp, raw_packet)
         if self.transformation is not None:
             packet = self.transformation(packet)
         for queue in self._queues:
-            queue.put(packet)
+            queue.put(packet, timestamp)
 
     @contextmanager
     def subscription(self):

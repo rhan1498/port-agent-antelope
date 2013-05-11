@@ -1,5 +1,7 @@
 #!/usr/bin/env Python
 
+from contextlib import closing
+
 from gevent import spawn, sleep
 from gevent.coros import Semaphore
 from gevent.server import StreamServer
@@ -23,7 +25,7 @@ class DataServer(StreamServer):
         )
 
     def handle(self, sock, addr):
-        try:
+        with closing(sock):
             socklock = Semaphore()
             spawn(self.heartbeat_sender, sock, addr, socklock)
             with self.orbpktsrc.subscription() as queue:
@@ -32,18 +34,14 @@ class DataServer(StreamServer):
                     pkt = makepacket(1, timestamp, orbpkt)
                     with socklock:
                         sock.sendall(pkt)
-        finally:
-            sock.close()
 
     def heartbeat_sender(self, sock, addr, socklock):
-        try:
+        with closing(sock):
             while True:
                 sleep(self.cfg.heartbeat_interval)
                 pkt = makepacket(7, ntp.now(), '')
                 with socklock:
                     sock.sendall(pkt)
-        finally:
-            sock.close()
 
 class CmdServer(StreamServer):
     def __init__(self, cfg, cmdproc):
@@ -55,7 +53,7 @@ class CmdServer(StreamServer):
         )
 
     def handle(self, sock, addr):
-        try:
+        with closing(sock):
             while True:
                 buf = bytearray()
                 while len(buf) < 16:
@@ -66,5 +64,3 @@ class CmdServer(StreamServer):
                 pkt.validate()
                 for cmd in pkt.data.split():
                     self.cmdproc.processCmd(cmd)
-        finally:
-            sock.close()

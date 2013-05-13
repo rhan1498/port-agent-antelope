@@ -28,7 +28,7 @@ BASE_FILENAME = "port_agent"
 
 def transform(orbpkt):
     d = orbpkt2dict(orbpkt)
-    return dumps(d)
+    return dumps(d, 2)
 
 
 class COMMAND_SENTINEL(object): pass

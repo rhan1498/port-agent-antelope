@@ -50,6 +50,25 @@ class Test_CmdProcessor(unittest.TestCase):
         self.cp.setCmd('cmd', None, cb)
         self.assertRaises(CmdUsageError, self.cp.processCmd, 'cmd hello')
 
+    def test_processCmds(self):
+        sent = []
+        def cb(*args, **kwargs):
+            sent.append(True)
+        self.cp.setCmd('cmd', None, cb)
+        self.cp.processCmds('cmd\ncmd')
+        self.assertEquals(sent, [True, True])
+
+    def test_processCmds2(self):
+        sent = []
+        def cb(*args, **kwargs):
+            sent.append(True)
+        def cb2(val, *args, **kwargs):
+            sent.append(True)
+        self.cp.setCmd('cmd', None, cb)
+        self.cp.setCmd('cmd2', int, cb)
+        self.cp.processCmds('cmd\ncmd2 123')
+        self.assertEquals(sent, [True, True])
+
 if __name__ == '__main__':
     unittest.main()
 

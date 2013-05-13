@@ -54,3 +54,7 @@ class CmdProcessor(object):
         name, val = self._parseCmd(cmdstr)
         self._executeCmd(name, val, *args, **kwargs)
 
+    def processCmds(self, cmdsstr, *args, **kwargs):
+        for cmdstr in cmdsstr.strip().split('\n'):
+            self.processCmd(cmdstr, *args, **kwargs)
+

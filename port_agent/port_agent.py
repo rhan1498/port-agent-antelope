@@ -7,7 +7,9 @@ from gevent import Greenlet, spawn
 
 from cmdproc import CmdProcessor
 from config import Config
+from dataserver import DataServer, CmdServer
 import ntp
+from orbpktsrc import OrbPktSrc
 from packet import makepacket
 
 
@@ -50,6 +52,9 @@ class PortAgent(Greenlet):
         self.state = 'STATE_STARTUP'
         self.cfg = Config(self.options, self.cmdproc)
         # start cmdserver; err if not cmd port
+        assert self.cfg.command_port is not None
+        self.cmdserver = CmdServer(self.cfg, self.cmdproc)
+        self.cmdserver.start()
         spawn(self.state_unconfigured)
 
     def _cmd(f):
@@ -72,7 +77,9 @@ class PortAgent(Greenlet):
 
     def state_unconfigured(self):
         self.state = 'STATE_UNCONFIGURED'
+        print 'configured:', self.cfg.configuredevent.isSet()
         self.cfg.configuredevent.wait()
+        print 'spawning configured' # doesn't get here; y?
         spawn(self.state_configured)
 
     def state_configured(self):

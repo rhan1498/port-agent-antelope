@@ -51,6 +51,8 @@ class Config(object):
             self.readConfig(options.conffile)
         # update from command line
         # what can the cmd line configure anyway? log level?
+        if hasattr(options, 'command_port') and options.command_port is not None:
+            self.command_port = options.command_port
 
     def readConfig(self, conffile):
         with open(conffile, 'rU') as file:

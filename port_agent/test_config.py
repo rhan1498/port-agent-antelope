@@ -5,6 +5,8 @@ from StringIO import StringIO
 from contextlib import closing
 from tempfile import NamedTemporaryFile
 
+from gevent import spawn, wait, sleep
+
 import mock
 
 from cmdproc import CmdProcessor, CmdParseError, ValueConversionError, \
@@ -43,7 +45,30 @@ class Test_readConfig(unittest.TestCase):
         self.cfg.antelope_orb_name = ''
         self.assertTrue(self.cfg.isConfigured())
 
+class Test_events(unittest.TestCase):
+    def setUp(self):
+        self.cp = CmdProcessor()
+        self.cfg = Config(None, self.cp)
+        self.called = False
+
+    def test_configuredevent(self):
+        self.assertFalse(self.cfg.configuredevent.isSet())
+        self.cfg.heartbeat_interval = 1
+        self.cfg.data_port = 1
+        self.cfg.antelope_orb_name = 1
+        self.assertTrue(self.cfg.configuredevent.isSet())
+
+    def test_dataserverconfigupdate(self):
+        def handler():
+            self.cfg.dataserverconfigupdate.wait()
+            self.called = True
+        self.assertFalse(self.cfg.dataserverconfigupdate.isSet())
+        spawn(handler)
+        sleep(0)
+        self.cfg.antelope_orb_select = 1
+        wait()
+        self.assertTrue(self.called)
+
 if __name__ == '__main__':
     unittest.main()
-
 

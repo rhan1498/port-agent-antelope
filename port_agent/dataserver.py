@@ -78,7 +78,7 @@ class CmdServer(StreamServer):
                         bytesleft -= bytesrx
                     pkt.validate(databuf)
                     # check msg type
-                    self.cmdproc.processCmds(str(databuf))
+                    self.cmdproc.processCmds(str(databuf), sock)
         except SockClosed:
             pass
 

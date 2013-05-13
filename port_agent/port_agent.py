@@ -86,9 +86,9 @@ class PortAgent(Greenlet):
         self.state = 'STATE_CONFIGURED'
         # spawn orbreapthr
         self.orbpktsrc = OrbPktSrc(
-            srcname = cfg.antelope_orb_name,
-            select = cfg.antelope_orb_select,
-            reject = cfg.antelope_orb_reject,
+            srcname = self.cfg.antelope_orb_name,
+            select = self.cfg.antelope_orb_select,
+            reject = self.cfg.antelope_orb_reject,
             timeout = 1,
             transformation = dumps
         )
@@ -102,7 +102,7 @@ class PortAgent(Greenlet):
     def state_connected(self):
         self.state = 'STATE_CONNECTED'
         # on dataserver config update event
-        self.cfg.dataserverconfgupdate.wait()
+        self.cfg.dataserverconfigupdate.wait()
         self.orbreapthr.kill()
         self.dataserver.stop()
         spawn(self.state_configured)

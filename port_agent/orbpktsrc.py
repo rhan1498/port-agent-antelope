@@ -73,7 +73,6 @@ class OrbPktSrc(Greenlet):
                     if not success:
                         raise value
                 except (Timeout, NoData):
-                    print "Timeout"
                     pass
                 else:
                     if value is None:
@@ -86,7 +85,7 @@ class OrbPktSrc(Greenlet):
         if self.transformation is not None:
             packet = self.transformation(packet)
         for queue in self._queues:
-            queue.put(packet, timestamp)
+            queue.put((packet, timestamp))
 
     @contextmanager
     def subscription(self):

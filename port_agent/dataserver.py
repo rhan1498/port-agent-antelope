@@ -43,6 +43,8 @@ class DataServer(StreamServer):
                     sock.sendall(pkt)
 
 
+class SockClosed(Exception): pass
+
 class CmdServer(StreamServer):
     def __init__(self, cfg, cmdproc):
         self.cfg = cfg
@@ -53,22 +55,30 @@ class CmdServer(StreamServer):
         )
 
     def handle(self, sock, addr):
-        with closing(sock):
-            headerbuf = bytearray(HEADER_SIZE)
-            view = memoryview(headerbuf)
-            bytesrx = HEADER_SIZE
-            while True:
-                while bytesrx:
-                    bytesrx -= sock.recv_into(view[HEADER_SIZE - bytesrx:], bytesrx)
-                pkt = ReceivedPacket(headerbuf)
-                datasize = pkt.pktsize - HEADER_SIZE
-                bytesrx = datasize
-                databuf = bytearray(bytesrx)
-                view = memoryview(databuf)
-                while bytesrx:
-                    bytesrx -= sock.recv_into(view[datasize - bytesrx:], bytesrx)
-                pkt.validate(databuf)
-                # check msg type
-                for cmd in pkt.data.split():
-                    self.cmdproc.processCmd(str(cmd))
+        try:
+            with closing(sock):
+                while True:
+                    headerbuf = bytearray(HEADER_SIZE)
+                    headerview = memoryview(headerbuf)
+                    bytesleft = HEADER_SIZE
+                    while bytesleft:
+                        bytesrx = sock.recv_into(headerview[HEADER_SIZE - bytesleft:], bytesleft)
+                        if bytesrx <= 0:
+                            raise SockClosed()
+                        bytesleft -= bytesrx
+                    pkt = ReceivedPacket(headerbuf)
+                    datasize = pkt.pktsize - HEADER_SIZE
+                    bytesleft = datasize
+                    databuf = bytearray(bytesleft)
+                    dataview = memoryview(databuf)
+                    while bytesleft:
+                        bytesrx = sock.recv_into(dataview[datasize - bytesleft:], bytesleft)
+                        if bytesrx <= 0:
+                            raise SockClosed()
+                        bytesleft -= bytesrx
+                    pkt.validate(databuf)
+                    # check msg type
+                    self.cmdproc.processCmds(str(databuf))
+        except SockClosed:
+            pass
 

@@ -65,24 +65,28 @@ class Test_CmdServer(unittest.TestCase):
         self.ds = CmdServer(self.cfg, self.cp)
 
     def test_CmdServer(self):
-        rxcalled = [False]
+        rxcalled = []
         def rx(*args, **kwargs):
-            print rxcalled
-            rxcalled[0] = True
+            rxcalled.append(True)
+        def rx2(val, *args, **kwargs):
+            rxcalled.append(True)
+            self.assertEquals(val, 123)
         self.cp.setCmd('cmd', None, rx)
+        self.cp.setCmd('cmd2', int, rx2)
         def tx():
             try:
                 self.ds.start()
                 sock = create_connection(('127.0.0.1', DATA_PORT), timeout=2)
                 with closing(sock):
-                    sock.sendall(makepacket(MSG_TYPE_PORT_AGENT_CMD, 0.0, 'cmd\n'))
-                    sleep(1)
+                    sock.sendall(makepacket(MSG_TYPE_PORT_AGENT_CMD, 0.0,
+                                            'cmd\ncmd2 123\n'))
+                sleep(0)
             finally:
                 self.ds.stop()
-        spawn(tx)
+        txg = spawn(tx)
         wait()
-        sleep(1)
         self.assertTrue(rxcalled[0])
+        self.assertTrue(rxcalled[1])
 
 if __name__ == '__main__':
     unittest.main()

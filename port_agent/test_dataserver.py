@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from contextlib import closing
 import unittest
 
 from mock import Mock, MagicMock
@@ -8,8 +9,9 @@ from gevent import sleep, spawn, wait
 from gevent.socket import create_connection
 from gevent.queue import Queue
 
-from dataserver import DataServer
-from packet import ReceivedPacket
+from cmdproc import CmdProcessor
+from dataserver import DataServer, CmdServer
+from packet import ReceivedPacket, makepacket, MSG_TYPE_PORT_AGENT_CMD
 
 DATA_PORT = 54321
 
@@ -54,6 +56,33 @@ class Test_DataServer(unittest.TestCase):
         sleep(1.5)
         rxg.kill()
         self.assertEquals(len(received), 1)
+
+class Test_CmdServer(unittest.TestCase):
+    def setUp(self):
+        self.cfg = Mock()
+        self.cfg.command_port = DATA_PORT
+        self.cp = CmdProcessor()
+        self.ds = CmdServer(self.cfg, self.cp)
+
+    def test_CmdServer(self):
+        rxcalled = [False]
+        def rx(*args, **kwargs):
+            print rxcalled
+            rxcalled[0] = True
+        self.cp.setCmd('cmd', None, rx)
+        def tx():
+            try:
+                self.ds.start()
+                sock = create_connection(('127.0.0.1', DATA_PORT), timeout=2)
+                with closing(sock):
+                    sock.sendall(makepacket(MSG_TYPE_PORT_AGENT_CMD, 0.0, 'cmd\n'))
+                    sleep(1)
+            finally:
+                self.ds.stop()
+        spawn(tx)
+        wait()
+        sleep(1)
+        self.assertTrue(rxcalled[0])
 
 if __name__ == '__main__':
     unittest.main()

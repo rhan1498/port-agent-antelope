@@ -23,7 +23,7 @@ class Test_ReceivedPacket(unittest.TestCase):
     def test_ReceivedPacket(self):
         buf = bytearray(TESTPKT1)
         pkt = ReceivedPacket(buf)
-        pkt.validate()
+        pkt.validate(bytearray())
 
 
 class Test_Both(unittest.TestCase):
@@ -32,10 +32,9 @@ class Test_Both(unittest.TestCase):
         msgtype = 222
         data = 'hello, world.'
         txpktbuf = makepacket(msgtype, timestamp, data)
-        rxpktbuf = txpktbuf[:HEADER_SIZE]
-        rxpktobj = ReceivedPacket(rxpktbuf)
-        rxpktbuf.extend(txpktbuf[HEADER_SIZE:])
-        rxpktobj.validate()
+        rxpktbuf = txpktbuf
+        rxpktobj = ReceivedPacket(rxpktbuf[:HEADER_SIZE])
+        rxpktobj.validate(rxpktbuf[HEADER_SIZE:])
         self.assertEquals(timestamp, rxpktobj.timestamp)
         self.assertEquals(msgtype, rxpktobj.msgtype)
         self.assertEquals(data, rxpktobj.data)

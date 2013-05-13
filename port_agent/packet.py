@@ -45,15 +45,26 @@ SYNC = (0xA3, 0x9D, 0x7A)
 HEADER_FORMAT = "!BBBBHHd"
 header_struct = Struct(HEADER_FORMAT)
 HEADER_SIZE = header_struct.size
+MAX_PACKET_SIZE = 2**16
 
+MSG_TYPE_INSTRUMENT_DATA = 1
+MSG_TYPE_PORT_AGENT_CMD = 3
+MSG_TYPE_HEARTBEAT = 7
 
 class HeaderSizeError(Exception): pass
 class SyncError(Exception): pass
 class ChecksumError(Exception): pass
 
 
-def calculateChecksum(data):
-    n = 0
+def calculateChecksum(data, seed=0):
+    """Returns the XOR series of items in data.
+
+    :param data: Data to checksum
+    :type data: sequence of chars, i.e. a string, or memoryview of a bytearray
+    """
+    # This would be a lot faster in C or cython; it could even be parallelized,
+    # or vectorized.
+    n = seed
     for datum in data:
         n ^= datum
     return n
@@ -116,30 +127,25 @@ class ReceivedPacket(object):
     packet checksum. The caller may now access the received data using the
     `data` attribute.
     """
-    def __init__(self, buf):
-        self.buf = buf
-        if len(buf) != HEADER_SIZE:
-            raise HeaderSizeError(len(buf))
-        sync, self.msgtype, self.pktsize, self.checksum, self.timestamp = unpack_header(buf)
+    def __init__(self, header):
+        if len(header) != HEADER_SIZE:
+            raise HeaderSizeError(len(header))
+        self.header = header
+        (sync, self.msgtype, self.pktsize, self.checksum,
+         self.timestamp) = unpack_header(header)
         if sync != SYNC:
             raise SyncError(sync)
         # Set checksum to zero so we don't checksum the checksum
-        pack_header(buf, self.msgtype, self.pktsize, 0, self.timestamp)
+        pack_header(header, self.msgtype, self.pktsize, 0, self.timestamp)
 
-    def validate(self):
+    def validate(self, data):
         """Compares the received checksum to the calculated checksum.
 
         :raises: `ChecksumError`
         """
-        rxchecksum = calculateChecksum(self.buf)
+        self.data = data
+        rxchecksum = calculateChecksum(self.header)
+        rxchecksum = calculateChecksum(data, rxchecksum)
         if rxchecksum != self.checksum:
             raise ChecksumError(rxchecksum)
-
-    @property
-    def data(self):
-        """The data portion of the received packet.
-
-        :rtype: `bytearray`
-        """
-        return self.buf[HEADER_SIZE:]
 

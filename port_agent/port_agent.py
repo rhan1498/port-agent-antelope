@@ -7,7 +7,7 @@ from gevent import Greenlet, spawn
 
 from cmdproc import CmdProcessor
 from config import Config
-from dataserver import DataServer, CmdServer
+from servers import DataServer, CmdServer
 import ntp
 from orbpkt2dict import orbpkt2dict
 from orbpktsrc import OrbPktSrc

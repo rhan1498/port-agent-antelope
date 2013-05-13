@@ -10,7 +10,7 @@ from gevent.socket import create_connection
 from gevent.queue import Queue
 
 from cmdproc import CmdProcessor
-from dataserver import DataServer, CmdServer
+from servers import DataServer, CmdServer
 from packet import ReceivedPacket, makepacket, MSG_TYPE_PORT_AGENT_CMD
 
 DATA_PORT = 54321

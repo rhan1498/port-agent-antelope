@@ -1,0 +1,5 @@
+command_port 54321
+data_port 54322
+heartbeat_interval 1
+antelope_orb_select .*
+antelope_orb_name anfexport:prelim

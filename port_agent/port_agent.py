@@ -9,6 +9,7 @@ from cmdproc import CmdProcessor
 from config import Config
 from dataserver import DataServer, CmdServer
 import ntp
+from orbpkt2dict import orbpkt2dict
 from orbpktsrc import OrbPktSrc
 from packet import makepacket
 
@@ -23,6 +24,11 @@ STATES = [
 ]
 
 BASE_FILENAME = "port_agent"
+
+
+def transform(orbpkt):
+    d = orbpkt2dict(orbpkt)
+    return dumps(d)
 
 
 class COMMAND_SENTINEL(object): pass
@@ -90,7 +96,7 @@ class PortAgent(Greenlet):
             select = self.cfg.antelope_orb_select,
             reject = self.cfg.antelope_orb_reject,
             timeout = 1,
-            transformation = dumps
+            transformation = transform
         )
         self.orbpktsrc.start()
         # spawn data server

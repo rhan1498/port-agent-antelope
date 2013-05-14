@@ -86,6 +86,11 @@ class PortAgent(Greenlet):
         except Exception:
             log.critical("PortAgent terminated due to exception", exc_info=True)
             raise
+        finally:
+            try:
+                self.orbpktsrc.kill()
+            except:
+                pass
 
     def state_startup(self):
         self.cfg = Config(self.options, self.cmdproc)

@@ -70,7 +70,7 @@ class PortAgent(Greenlet):
                 self.heartbeat_event.set()
                 self.heartbeat_event.clear()
         except Exception:
-            log.critical("heartbeat_timer terminated due to exception", exc_info=True)
+            log.critical("heartbeat_timer terminating due to exception", exc_info=True)
             raise
 
     def _run(self):
@@ -94,7 +94,7 @@ class PortAgent(Greenlet):
         self.cfg = Config(self.options, self.cmdproc)
         # start cmdserver; err if not cmd port
         assert self.cfg.command_port is not None
-        self.cmdserver = CmdServer(self.cfg, self.cmdproc, self.janitor)
+        self.cmdserver = CmdServer(('localhost', self.cfg.command_port), self.cmdproc, self.janitor)
         self.cmdserver.start()
         return self.state_unconfigured
 
@@ -115,8 +115,10 @@ class PortAgent(Greenlet):
         self.orbpktsrc.link_exception(self.janitor)
         self.orbpktsrc.start()
         # spawn data server
-        self.dataserver = DataServer(self.cfg, self.orbpktsrc,
-                                     self.heartbeat_event)
+        self.dataserver = DataServer(
+                ('localhost', self.cfg.data_port),
+                self.orbpktsrc.subscription,
+                self.heartbeat_event, self.janitor)
         self.dataserver.start()
         # spawn state_connected
         return self.state_connected

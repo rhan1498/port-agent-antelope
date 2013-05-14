@@ -3,7 +3,7 @@
 from contextlib import closing
 import errno
 
-from gevent import spawn, socket
+from gevent import spawn, socket, getcurrent
 from gevent.coros import Semaphore
 from gevent.server import StreamServer
 
@@ -36,12 +36,18 @@ class DataServer(StreamServer):
         super(DataServer, self).stop(*args, **kwargs)
 
     def handle(self, sock, addr):
+        thisgreenlet = getcurrent()
+        def heartbeat_janitor(src):
+            log.debug("Cleanup aisle 12")
+            thisgreenlet.kill(src.exception)
         socket_error = ''
         try:
             log.info("DataServer accepted connection from %s" % (addr,))
             with closing(sock):
                 socklock = Semaphore()
-                heartbeat = spawn(self.heartbeat_sender, sock, addr, socklock)
+                heartbeat = spawn(self.heartbeat_sender, sock, addr,
+                                  socklock)
+                heartbeat.link_exception(heartbeat_janitor)
                 try:
                     with self.orbpktsrc.subscription() as queue:
                         while True:
@@ -50,14 +56,19 @@ class DataServer(StreamServer):
                             with socklock:
                                 sock.sendall(pkt)
                 finally:
-                    heartbeat.kill()
+                    try:
+                        heartbeat.kill()
+                    except:
+                        pass
         except socket.error, e:
             socket_error = e
         except Exception:
-            log.error("DataServer", exc_info=True)
+            log.error("DataServer connection terminated due to exception", exc_info=True)
         finally:
             log.info("DataServer connection closed from %s %s" % (addr,
                                                                   socket_error))
+    def janitor(self, src):
+        self.kill(src.exception)
 
     def heartbeat_sender(self, sock, addr, socklock):
         try:
@@ -70,7 +81,8 @@ class DataServer(StreamServer):
         except socket.error, e:
             log.debug('heartbeat socket err: %s' % e)
         except Exception:
-            log.error("heartbeat", exc_info=True)
+            log.error("heartbeat_sender terminating due to exception", exc_info=True)
+            raise
 
 
 class SockClosed(Exception): pass
@@ -124,7 +136,7 @@ class CmdServer(StreamServer):
         except socket.error:
             socket_error = e
         except Exception:
-            log.error("CmdServer", exc_info=True)
+            log.error("CmdServer connection terminated due to exception", exc_info=True)
         finally:
             log.info("CmdServer connection closed from %s %s" % (addr,
                                                                   socket_error))

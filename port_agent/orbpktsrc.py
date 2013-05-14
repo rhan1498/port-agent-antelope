@@ -98,7 +98,7 @@ class OrbPktSrc(Greenlet):
             packet = self.transformation(packet)
         for queue in self._queues:
             try:
-                queue.put((packet, timestamp))
+                queue.put((packet, timestamp), block=False)
             except Full:
                 log.debug("queue overflow")
 

@@ -17,7 +17,7 @@ from weakref import proxy
 
 from gevent import Greenlet
 from gevent.threadpool import ThreadPool, wrap_errors
-from gevent.queue import Queue, Empty
+from gevent.queue import Queue, Empty, Full
 
 from antelope.brttpkt import OrbreapThr, Timeout, NoData
 from antelope.Pkt import Packet
@@ -33,6 +33,7 @@ class GilReleaseNotSetError(Exception): pass
 if 'ANTELOPE_PYTHON_GILRELEASE' not in os.environ:
     raise GilReleaseNotSetError("ANTELOPE_PYTHON_GILRELEASE not in environment")
 
+MAX_QUEUE_SIZE = 100
 
 class OrbPktSrc(Greenlet):
     """Gevent based orb packet publisher.
@@ -96,7 +97,10 @@ class OrbPktSrc(Greenlet):
         if self.transformation is not None:
             packet = self.transformation(packet)
         for queue in self._queues:
-            queue.put((packet, timestamp))
+            try:
+                queue.put((packet, timestamp))
+            except Full:
+                log.debug("queue overflow")
 
     @contextmanager
     def subscription(self):
@@ -114,7 +118,7 @@ class OrbPktSrc(Greenlet):
                     pickledpacket = queue.get()
                     ...
         """
-        queue = Queue()
+        queue = Queue(maxsize=MAX_QUEUE_SIZE)
         self._queues.add(queue)
         yield proxy(queue)
 

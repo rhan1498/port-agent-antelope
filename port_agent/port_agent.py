@@ -80,19 +80,21 @@ class PortAgent(Greenlet):
             while True:
                 self.state = self.state()
         except Exception:
-            log.critical("PortAgent terminated due to exception", exc_info=True)
+            log.critical("PortAgent terminating due to exception", exc_info=True)
             raise
         finally:
-            try:
-                self.orbpktsrc.kill()
-            except:
-                pass
+            try: self.orbpktsrc.kill()
+            except: pass
+            try: self.dataserver.stop()
+            except: pass
+            try: self.cmdserver.stop()
+            except: pass
 
     def state_startup(self):
         self.cfg = Config(self.options, self.cmdproc)
         # start cmdserver; err if not cmd port
         assert self.cfg.command_port is not None
-        self.cmdserver = CmdServer(self.cfg, self.cmdproc)
+        self.cmdserver = CmdServer(self.cfg, self.cmdproc, self.janitor)
         self.cmdserver.start()
         return self.state_unconfigured
 

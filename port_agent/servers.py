@@ -67,8 +67,6 @@ class DataServer(StreamServer):
         finally:
             log.info("DataServer connection closed from %s %s" % (addr,
                                                                   socket_error))
-    def janitor(self, src):
-        self.kill(src.exception)
 
     def heartbeat_sender(self, sock, addr, socklock):
         try:
@@ -88,7 +86,8 @@ class DataServer(StreamServer):
 class SockClosed(Exception): pass
 
 class CmdServer(StreamServer):
-    def __init__(self, cfg, cmdproc):
+    def __init__(self, cfg, cmdproc, janitor):
+        self.janitor = janitor
         self.cfg = cfg
         self.cmdproc = cmdproc
         super(CmdServer, self).__init__(
@@ -101,13 +100,16 @@ class CmdServer(StreamServer):
         super(CmdServer, self).start(*args, **kwargs)
 
     def stop(self, *args, **kwargs):
-        log.info("CmdServer stopping")
         super(CmdServer, self).stop(*args, **kwargs)
+        log.info("CmdServer stopped")
 
     def handle(self, sock, addr):
         socket_error = ''
         try:
             log.info("CmdServer accepted connection from %s" % (addr,))
+            thisgreenlet = getcurrent()
+            thisgreenlet.link_exception(self.janitor)
+            raise Exception("halghalghalgh")
             with closing(sock):
                 while True:
                     headerbuf = bytearray(HEADER_SIZE)
@@ -135,8 +137,10 @@ class CmdServer(StreamServer):
             pass
         except socket.error:
             socket_error = e
-        except Exception:
-            log.error("CmdServer connection terminated due to exception", exc_info=True)
+        except Exception, e:
+            log.error("CmdServer connection terminating due to exception %s" %
+                                                            (addr,), exc_info=True)
+            raise
         finally:
             log.info("CmdServer connection closed from %s %s" % (addr,
                                                                   socket_error))

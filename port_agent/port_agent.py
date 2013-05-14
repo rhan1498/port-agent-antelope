@@ -33,6 +33,9 @@ def transform(orbpkt):
     return dumps(d, 2)
 
 
+class OrbPktSrcError(Exception): pass
+
+
 class COMMAND_SENTINEL(object): pass
 
 class PortAgent(Greenlet):
@@ -57,13 +60,58 @@ class PortAgent(Greenlet):
             raise Exception("Invalid state", v)
 
     def _run(self):
-        self.state = 'STATE_STARTUP'
+        try:
+            state = self.state_startup
+            while True:
+                log.debug("Transitioning to state %s" % state)
+                state = state()
+        except Exception:
+            log.critical("PortAgent terminated due to exception", exc_info=True)
+            raise
+
+    def state_startup(self):
         self.cfg = Config(self.options, self.cmdproc)
         # start cmdserver; err if not cmd port
         assert self.cfg.command_port is not None
         self.cmdserver = CmdServer(self.cfg, self.cmdproc)
         self.cmdserver.start()
-        spawn(self.state_unconfigured)
+        # Is this bad? Do the parents stay alive forever, creating an infinite
+        # recursion?
+        # No, every Greenlet has it's parent set to hub
+        # https://github.com/surfly/gevent/blob/master/gevent/greenlet.py#L76
+        return self.state_unconfigured
+
+    def state_unconfigured(self):
+        self.cfg.configuredevent.wait()
+        return self.state_configured
+
+    def orbreapthr_janitor(self, orbpktsrc):
+        self.kill(orbpktsrc.exception)
+
+    def state_configured(self):
+        # spawn orbreapthr
+        # link to it? what if it dies?
+        self.orbpktsrc = OrbPktSrc(
+            srcname = self.cfg.antelope_orb_name,
+            select = self.cfg.antelope_orb_select,
+            reject = self.cfg.antelope_orb_reject,
+            timeout = 1,
+            transformation = transform
+        )
+        self.orbpktsrc.link(self.orbreapthr_janitor)
+        self.orbpktsrc.start()
+        # spawn data server
+        self.dataserver = DataServer(self.cfg, self.orbpktsrc)
+        self.dataserver.start()
+        # spawn state_connected
+        return self.state_connected
+
+    def state_connected(self):
+        # on dataserver config update event
+        self.cfg.dataserverconfigupdate.wait()
+        self.orbreapthr.kill()
+        self.dataserver.stop()
+        return self.state_configured
 
     def _cmd(f):
         f._is_a_command = COMMAND_SENTINEL
@@ -80,36 +128,6 @@ class PortAgent(Greenlet):
     @_cmd
     def shutdown(self, sock):
         gevent.shutdown()
-
-    def state_unconfigured(self):
-        self.state = 'STATE_UNCONFIGURED'
-        self.cfg.configuredevent.wait()
-        spawn(self.state_configured)
-
-    def state_configured(self):
-        self.state = 'STATE_CONFIGURED'
-        # spawn orbreapthr
-        self.orbpktsrc = OrbPktSrc(
-            srcname = self.cfg.antelope_orb_name,
-            select = self.cfg.antelope_orb_select,
-            reject = self.cfg.antelope_orb_reject,
-            timeout = 1,
-            transformation = transform
-        )
-        self.orbpktsrc.start()
-        # spawn data server
-        self.dataserver = DataServer(self.cfg, self.orbpktsrc)
-        self.dataserver.start()
-        # spawn state_connected
-        spawn(self.state_connected)
-
-    def state_connected(self):
-        self.state = 'STATE_CONNECTED'
-        # on dataserver config update event
-        self.cfg.dataserverconfigupdate.wait()
-        self.orbreapthr.kill()
-        self.dataserver.stop()
-        spawn(self.state_configured)
 
     # no state_disconnected; orbreapthr doesn't ever disconnect or even report
     # errors; there are various approaches we could take to try to beat it into

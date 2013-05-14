@@ -84,8 +84,8 @@ class OrbPktSrc(Greenlet):
                             raise Exception('Nothing to publish')
                         self._publish(value, timestamp)
         except Exception, e:
-            log.error("orbpktsrc", exc_info=True)
-            # exit?
+            log.error("OrbPktSrc terminating due to exception", exc_info=True)
+            raise
         finally:
             log.info("Disconnected from ORB %s %s %s" % (self.srcname, self.select,
                                                          self.reject))

@@ -26,10 +26,10 @@ def main(args=None):
     (options, args) = op.parse_args(args[1:])
     agent = PortAgent(options)
     log.info("Starting")
-    try:
-        agent.start()
-        print wait()
-        return 0
-    except:
-        log.critical("Exiting due to exception", exc_info=True)
+    agent.start()
+    agent.join()
+    if not agent.successful():
+        log.critical("EXIT_FAILURE")
+        return 1
+    return 0
 

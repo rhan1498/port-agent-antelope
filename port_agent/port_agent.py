@@ -5,6 +5,8 @@ from cPickle import dumps
 import gevent
 from gevent import Greenlet, spawn
 
+from ooi.logging import log
+
 from cmdproc import CmdProcessor
 from config import Config
 from servers import DataServer, CmdServer

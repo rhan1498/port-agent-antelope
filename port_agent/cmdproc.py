@@ -37,6 +37,7 @@ class CmdProcessor(object):
         return name, val
 
     def _executeCmd(self, name, val, *args, **kwargs):
+        log.info("Executing command %s %s" % (name, val))
         converter, callback, cbargs, cbkwargs = self.cmds[name]
         if converter is not None:
             try:

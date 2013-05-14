@@ -22,6 +22,8 @@ from gevent.queue import Queue, Empty
 from antelope.brttpkt import OrbreapThr, Timeout, NoData
 from antelope.Pkt import Packet
 
+from ooi.logging import log
+
 import ntp
 
 
@@ -61,10 +63,17 @@ class OrbPktSrc(Greenlet):
         self._queues = set()
         self.transformation = transformation
 
+    def kill(self, *args, **kwargs):
+        super(OrbPktSrc, self).kill(*args, **kwargs)
+        log.info("Disconnected from ORB %s %s %s" % (self.srcname, self.select,
+                                                     self.reject))
+
     def _run(self):
         threadpool = ThreadPool(maxsize=1)
         args = self.srcname, self.select, self.reject
         with OrbreapThr(*args, timeout=1) as orbreapthr:
+            log.info("Connected to ORB %s %s %s" % (self.srcname, self.select,
+                                                    self.reject))
             while True:
                 try:
                     success, value = threadpool.spawn(

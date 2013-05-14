@@ -5,11 +5,15 @@ import sys
 
 from gevent import wait
 
+from ooi.logging import config, log
+
 from port_agent import PortAgent
 
 def main(args=None):
     if args is None:
         args = sys.argv
+    config.add_configuration('logging.yaml')
+#    config.add_configuration('logging-local.yaml')
     op = OptionParser()
     op.add_option("-c", "--conffile", action="store")
     op.add_option("-v", "--verbose", action="store_true")
@@ -21,7 +25,11 @@ def main(args=None):
     op.add_option("-p", "--command_port", action="store", type='int')
     (options, args) = op.parse_args(args[1:])
     agent = PortAgent(options)
-    agent.start()
-    print wait()
-    return 0
+    log.info("Starting")
+    try:
+        agent.start()
+        print wait()
+        return 0
+    except:
+        log.critical("Exiting due to exception", exc_info=True)
 

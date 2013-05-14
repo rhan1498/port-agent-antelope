@@ -52,6 +52,8 @@ class DataServer(StreamServer):
                     heartbeat.kill()
         except socket.error, e:
             socket_error = e
+        except Exception:
+            log.error("DataServer", exc_info=True)
         finally:
             log.info("DataServer connection closed from %s %s" % (addr,
                                                                   socket_error))
@@ -66,6 +68,8 @@ class DataServer(StreamServer):
                         sock.sendall(pkt)
         except socket.error, e:
             log.debug('heartbeat socket err: %s' % e)
+        except Exception:
+            log.error("heartbeat", exc_info=True)
 
 
 class SockClosed(Exception): pass
@@ -118,6 +122,8 @@ class CmdServer(StreamServer):
             pass
         except socket.error:
             socket_error = e
+        except Exception:
+            log.error("CmdServer", exc_info=True)
         finally:
             log.info("CmdServer connection closed from %s %s" % (addr,
                                                                   socket_error))

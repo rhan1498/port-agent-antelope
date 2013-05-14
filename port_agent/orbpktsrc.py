@@ -63,30 +63,32 @@ class OrbPktSrc(Greenlet):
         self._queues = set()
         self.transformation = transformation
 
-    def kill(self, *args, **kwargs):
-        super(OrbPktSrc, self).kill(*args, **kwargs)
-        log.info("Disconnected from ORB %s %s %s" % (self.srcname, self.select,
-                                                     self.reject))
-
     def _run(self):
-        threadpool = ThreadPool(maxsize=1)
-        args = self.srcname, self.select, self.reject
-        with OrbreapThr(*args, timeout=1) as orbreapthr:
-            log.info("Connected to ORB %s %s %s" % (self.srcname, self.select,
-                                                    self.reject))
-            while True:
-                try:
-                    success, value = threadpool.spawn(
-                            wrap_errors, (Exception,), orbreapthr.get, [], {}).get()
-                    timestamp = ntp.now()
-                    if not success:
-                        raise value
-                except (Timeout, NoData):
-                    pass
-                else:
-                    if value is None:
-                        raise Exception('Nothing to publish')
-                    self._publish(value, timestamp)
+        try:
+            threadpool = ThreadPool(maxsize=1)
+            args = self.srcname, self.select, self.reject
+            with OrbreapThr(*args, timeout=1) as orbreapthr:
+                log.info("Connected to ORB %s %s %s" % (self.srcname, self.select,
+                                                        self.reject))
+                while True:
+                    try:
+                        success, value = threadpool.spawn(
+                                wrap_errors, (Exception,), orbreapthr.get, [], {}).get()
+                        timestamp = ntp.now()
+                        if not success:
+                            raise value
+                    except (Timeout, NoData):
+                        pass
+                    else:
+                        if value is None:
+                            raise Exception('Nothing to publish')
+                        self._publish(value, timestamp)
+        except Exception, e:
+            log.error("orbpktsrc", exc_info=True)
+            # exit?
+        finally:
+            log.info("Disconnected from ORB %s %s %s" % (self.srcname, self.select,
+                                                         self.reject))
 
     def _publish(self, r, timestamp):
         pktid, srcname, orbtimestamp, raw_packet = r

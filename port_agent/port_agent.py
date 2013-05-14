@@ -94,7 +94,8 @@ class PortAgent(Greenlet):
         self.cfg = Config(self.options, self.cmdproc)
         # start cmdserver; err if not cmd port
         assert self.cfg.command_port is not None
-        self.cmdserver = CmdServer(('localhost', self.cfg.command_port), self.cmdproc, self.janitor)
+        self.cmdserver = CmdServer(('localhost', self.cfg.command_port),
+                                   self.cmdproc.processCmds, self.janitor)
         self.cmdserver.start()
         return self.state_unconfigured
 

@@ -97,8 +97,8 @@ class DataServer(StreamServer):
 
 
 class CmdServer(StreamServer):
-    def __init__(self, addr, cmdproc, janitor):
-        self.cmdproc = cmdproc
+    def __init__(self, addr, process_cmds, janitor):
+        self.process_cmds = process_cmds
         super(CmdServer, self).__init__(addr, janitor)
 
     def work(self, sock, addr):
@@ -123,5 +123,5 @@ class CmdServer(StreamServer):
                 bytesleft -= bytesrx
             pkt.validate(databuf)
             # check msg type
-            self.cmdproc.processCmds(str(databuf), sock)
+            self.process_cmds(str(databuf), sock)
 

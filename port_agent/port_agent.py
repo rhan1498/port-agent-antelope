@@ -52,9 +52,9 @@ class PortAgent(Greenlet):
     def state(self, v):
         if v in STATES:
             self._state = v
-            print "new state:", v
+            log.debug("Transitioning to state %s" % v)
         else:
-            raise Exception("Invalid state")
+            raise Exception("Invalid state", v)
 
     def _run(self):
         self.state = 'STATE_STARTUP'
@@ -71,12 +71,10 @@ class PortAgent(Greenlet):
 
     @_cmd
     def get_state(self, sock):
-        print "get_state"
         sock.sendall(makepacket(MSG_TYPE_STATUS, ntp.now(), self.state))
 
     @_cmd
     def ping(self, sock):
-        print "ping"
         sock.sendall(makepacket(MSG_TYPE_HEARTBEAT, ntp.now(), ''))
 
     @_cmd
@@ -85,9 +83,7 @@ class PortAgent(Greenlet):
 
     def state_unconfigured(self):
         self.state = 'STATE_UNCONFIGURED'
-        print 'configured:', self.cfg.configuredevent.isSet()
         self.cfg.configuredevent.wait()
-        print 'spawning configured' # doesn't get here; y?
         spawn(self.state_configured)
 
     def state_configured(self):

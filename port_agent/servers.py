@@ -6,6 +6,8 @@ from gevent import spawn, sleep
 from gevent.coros import Semaphore
 from gevent.server import StreamServer
 
+from ooi.logging import log
+
 from packet import makepacket, ReceivedPacket, HEADER_SIZE, MAX_PACKET_SIZE, \
                    MSG_TYPE_INSTRUMENT_DATA, MSG_TYPE_HEARTBEAT
 import ntp
@@ -23,16 +25,28 @@ class DataServer(StreamServer):
             spawn = POOL_SIZE
         )
 
+    def start(self, *args, **kwargs):
+        log.info("DataServer listening on %s" % self.cfg.data_port)
+        super(DataServer, self).start(*args, **kwargs)
+
+    def stop(self, *args, **kwargs):
+        log.info("DataServer stopping")
+        super(DataServer, self).stop(*args, **kwargs)
+
     def handle(self, sock, addr):
-        with closing(sock):
-            socklock = Semaphore()
-            spawn(self.heartbeat_sender, sock, addr, socklock)
-            with self.orbpktsrc.subscription() as queue:
-                while True:
-                    orbpkt, timestamp = queue.get()
-                    pkt = makepacket(MSG_TYPE_INSTRUMENT_DATA, timestamp, orbpkt)
-                    with socklock:
-                        sock.sendall(pkt)
+        try:
+            log.info("DataServer accepted connection from %s" % addr)
+            with closing(sock):
+                socklock = Semaphore()
+                spawn(self.heartbeat_sender, sock, addr, socklock)
+                with self.orbpktsrc.subscription() as queue:
+                    while True:
+                        orbpkt, timestamp = queue.get()
+                        pkt = makepacket(MSG_TYPE_INSTRUMENT_DATA, timestamp, orbpkt)
+                        with socklock:
+                            sock.sendall(pkt)
+        finally:
+            log.info("DataServer connection closed from %s" % addr)
 
     def heartbeat_sender(self, sock, addr, socklock):
         with closing(sock):
@@ -54,8 +68,17 @@ class CmdServer(StreamServer):
             spawn = POOL_SIZE
         )
 
+    def start(self, *args, **kwargs):
+        log.info("CmdServer listening on %s" % self.cfg.command_port)
+        super(CmdServer, self).start(*args, **kwargs)
+
+    def stop(self, *args, **kwargs):
+        log.info("CmdServer stopping")
+        super(CmdServer, self).stop(*args, **kwargs)
+
     def handle(self, sock, addr):
         try:
+            log.info("CmdServer accepted connection from %s" % addr)
             with closing(sock):
                 while True:
                     headerbuf = bytearray(HEADER_SIZE)
@@ -81,4 +104,6 @@ class CmdServer(StreamServer):
                     self.cmdproc.processCmds(str(databuf), sock)
         except SockClosed:
             pass
+        finally:
+            log.info("CmdServer connection closed from %s" % addr)
 

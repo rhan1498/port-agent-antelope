@@ -8,6 +8,8 @@ from functools import partial
 
 from gevent.event import Event
 
+import logging
+
 class Config(object):
     cmds = {
         'heartbeat_interval': (int, None),
@@ -50,7 +52,8 @@ class Config(object):
         if hasattr(options, 'conffile') and options.conffile is not None:
             self.readConfig(options.conffile)
         # update from command line
-        # what can the cmd line configure anyway? log level?
+        if hasattr(options, 'verbose') and options.verbose is True:
+            logging.getLogger().setLevel(logging.DEBUG)
         if hasattr(options, 'command_port') and options.command_port is not None:
             self.command_port = options.command_port
 

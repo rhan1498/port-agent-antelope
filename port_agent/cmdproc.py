@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from ooi.logging import log
 
 class CmdParseError(Exception):
     """Raised when the command string cannot be parsed."""

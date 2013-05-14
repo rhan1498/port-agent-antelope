@@ -3,7 +3,8 @@
 from cPickle import dumps
 
 import gevent
-from gevent import Greenlet, spawn
+from gevent import Greenlet, spawn, sleep
+from gevent.event import Event
 
 from ooi.logging import log
 
@@ -43,6 +44,7 @@ class PortAgent(Greenlet):
         super(PortAgent, self).__init__()
         self.options = options
         self.cmdproc = CmdProcessor()
+        self.heartbeat_event = Event()
         for val in self.__dict__.itervalues():
             if hasattr(val, '_is_a_command') and val._is_a_command is COMMAND_SENTINEL:
                 self.cmdproc.setCmd(val.__name__, None, val)
@@ -59,9 +61,25 @@ class PortAgent(Greenlet):
         else:
             raise Exception("Invalid state", v)
 
+    def janitor(self, src):
+        log.debug("Janitor, cleanup aisle 12")
+        self.kill(src.exception)
+
+    def heartbeat_timer(self):
+        try:
+            while True:
+                self.cfg.heartbeatactive.wait()
+                sleep(self.cfg.heartbeat_interval)
+                self.heartbeat_event.set()
+                self.heartbeat_event.clear()
+        except Exception:
+            log.critical("heartbeat_timer terminated due to exception", exc_info=True)
+            raise
+
     def _run(self):
         try:
             state = self.state_startup
+            spawn(self.heartbeat_timer).link_exception(self.janitor)
             while True:
                 log.debug("Transitioning to state %s" % state)
                 state = state()
@@ -81,9 +99,6 @@ class PortAgent(Greenlet):
         self.cfg.configuredevent.wait()
         return self.state_configured
 
-    def orbreapthr_janitor(self, orbpktsrc):
-        self.kill(orbpktsrc.exception)
-
     def state_configured(self):
         # spawn orbreapthr
         # link to it? what if it dies?
@@ -94,10 +109,11 @@ class PortAgent(Greenlet):
             timeout = 1,
             transformation = transform
         )
-        self.orbpktsrc.link(self.orbreapthr_janitor)
+        self.orbpktsrc.link_exception(self.janitor)
         self.orbpktsrc.start()
         # spawn data server
-        self.dataserver = DataServer(self.cfg, self.orbpktsrc)
+        self.dataserver = DataServer(self.cfg, self.orbpktsrc,
+                                     self.heartbeat_event)
         self.dataserver.start()
         # spawn state_connected
         return self.state_connected

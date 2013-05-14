@@ -39,6 +39,7 @@ class Config(object):
     def __init__(self, options, cmdproc):
         self.configuredevent = Event()
         self.dataserverconfigupdate = Event()
+        self.heartbeatactive = Event()
         for name, (converter, default) in self.cmds.iteritems():
             self.cmdproc = cmdproc
             # Initialize attr with default val
@@ -78,4 +79,10 @@ class Config(object):
         if name in self.DATASERVER_DEPS:
             self.dataserverconfigupdate.set()
             self.dataserverconfigupdate.clear()
+        # TODO: make heartbeat_interval a property?
+        if name == 'heartbeat_interval':
+            if value > 0:
+                self.heartbeatactive.set()
+            else:
+                self.heartbeatactive.clear()
 

@@ -3,7 +3,7 @@
 from contextlib import closing
 import errno
 
-from gevent import spawn, sleep, socket
+from gevent import spawn, socket
 from gevent.coros import Semaphore
 from gevent.server import StreamServer
 
@@ -18,7 +18,8 @@ POOL_SIZE = 100
 
 
 class DataServer(StreamServer):
-    def __init__(self, cfg, orbpktsrc):
+    def __init__(self, cfg, orbpktsrc, heartbeat_event):
+        self.heartbeat_event = heartbeat_event
         self.cfg = cfg
         self.orbpktsrc = orbpktsrc
         super(DataServer, self).__init__(
@@ -62,7 +63,7 @@ class DataServer(StreamServer):
         try:
             with closing(sock):
                 while True:
-                    sleep(self.cfg.heartbeat_interval)
+                    self.heartbeat_event.wait()
                     pkt = makepacket(MSG_TYPE_HEARTBEAT, ntp.now(), '')
                     with socklock:
                         sock.sendall(pkt)

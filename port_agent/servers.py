@@ -3,7 +3,7 @@
 from contextlib import closing
 import errno
 
-from gevent import spawn, socket, getcurrent
+from gevent import spawn, socket, getcurrent, sleep
 from gevent.coros import Semaphore
 import gevent.server
 
@@ -86,6 +86,7 @@ class DataServer(StreamServer):
                     pkt = makepacket(MSG_TYPE_HEARTBEAT, ntp.now(), '')
                     with socklock:
                         sock.sendall(pkt)
+                    sleep()
         except socket.error, e:
             log.debug('heartbeat socket err: %s' % e)
         except Exception:

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 from contextlib import closing
+import errno
 
-from gevent import spawn, sleep
+from gevent import spawn, sleep, socket
 from gevent.coros import Semaphore
 from gevent.server import StreamServer
 
@@ -34,27 +35,37 @@ class DataServer(StreamServer):
         super(DataServer, self).stop(*args, **kwargs)
 
     def handle(self, sock, addr):
+        socket_error = ''
         try:
-            log.info("DataServer accepted connection from %s" % addr)
+            log.info("DataServer accepted connection from %s" % (addr,))
             with closing(sock):
                 socklock = Semaphore()
-                spawn(self.heartbeat_sender, sock, addr, socklock)
-                with self.orbpktsrc.subscription() as queue:
-                    while True:
-                        orbpkt, timestamp = queue.get()
-                        pkt = makepacket(MSG_TYPE_INSTRUMENT_DATA, timestamp, orbpkt)
-                        with socklock:
-                            sock.sendall(pkt)
+                heartbeat = spawn(self.heartbeat_sender, sock, addr, socklock)
+                try:
+                    with self.orbpktsrc.subscription() as queue:
+                        while True:
+                            orbpkt, timestamp = queue.get()
+                            pkt = makepacket(MSG_TYPE_INSTRUMENT_DATA, timestamp, orbpkt)
+                            with socklock:
+                                sock.sendall(pkt)
+                finally:
+                    heartbeat.kill()
+        except socket.error, e:
+            socket_error = e
         finally:
-            log.info("DataServer connection closed from %s" % addr)
+            log.info("DataServer connection closed from %s %s" % (addr,
+                                                                  socket_error))
 
     def heartbeat_sender(self, sock, addr, socklock):
-        with closing(sock):
-            while True:
-                sleep(self.cfg.heartbeat_interval)
-                pkt = makepacket(MSG_TYPE_HEARTBEAT, ntp.now(), '')
-                with socklock:
-                    sock.sendall(pkt)
+        try:
+            with closing(sock):
+                while True:
+                    sleep(self.cfg.heartbeat_interval)
+                    pkt = makepacket(MSG_TYPE_HEARTBEAT, ntp.now(), '')
+                    with socklock:
+                        sock.sendall(pkt)
+        except socket.error, e:
+            log.debug('heartbeat socket err: %s' % e)
 
 
 class SockClosed(Exception): pass
@@ -77,8 +88,9 @@ class CmdServer(StreamServer):
         super(CmdServer, self).stop(*args, **kwargs)
 
     def handle(self, sock, addr):
+        socket_error = ''
         try:
-            log.info("CmdServer accepted connection from %s" % addr)
+            log.info("CmdServer accepted connection from %s" % (addr,))
             with closing(sock):
                 while True:
                     headerbuf = bytearray(HEADER_SIZE)
@@ -104,6 +116,9 @@ class CmdServer(StreamServer):
                     self.cmdproc.processCmds(str(databuf), sock)
         except SockClosed:
             pass
+        except socket.error:
+            socket_error = e
         finally:
-            log.info("CmdServer connection closed from %s" % addr)
+            log.info("CmdServer connection closed from %s %s" % (addr,
+                                                                  socket_error))
 

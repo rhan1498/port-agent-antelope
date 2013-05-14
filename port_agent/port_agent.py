@@ -55,11 +55,8 @@ class PortAgent(Greenlet):
 
     @state.setter
     def state(self, v):
-        if v in STATES:
-            self._state = v
-            log.debug("Transitioning to state %s" % v)
-        else:
-            raise Exception("Invalid state", v)
+        self._state = v
+        log.debug("Transitioning to state %s" % v)
 
     def janitor(self, src):
         log.debug("Janitor, cleanup aisle 12")
@@ -78,11 +75,10 @@ class PortAgent(Greenlet):
 
     def _run(self):
         try:
-            state = self.state_startup
+            self.state = self.state_startup
             spawn(self.heartbeat_timer).link_exception(self.janitor)
             while True:
-                log.debug("Transitioning to state %s" % state)
-                state = state()
+                self.state = self.state()
         except Exception:
             log.critical("PortAgent terminated due to exception", exc_info=True)
             raise

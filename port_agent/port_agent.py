@@ -75,10 +75,6 @@ class PortAgent(Greenlet):
         assert self.cfg.command_port is not None
         self.cmdserver = CmdServer(self.cfg, self.cmdproc)
         self.cmdserver.start()
-        # Is this bad? Do the parents stay alive forever, creating an infinite
-        # recursion?
-        # No, every Greenlet has it's parent set to hub
-        # https://github.com/surfly/gevent/blob/master/gevent/greenlet.py#L76
         return self.state_unconfigured
 
     def state_unconfigured(self):

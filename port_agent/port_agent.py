@@ -8,8 +8,6 @@ from gevent.event import Event
 
 from ooi.logging import log
 
-from cmdproc import CmdProcessor
-from config import Config
 from servers import DataServer, CmdServer
 import ntp
 from orbpkt2dict import orbpkt2dict
@@ -40,14 +38,14 @@ class OrbPktSrcError(Exception): pass
 class COMMAND_SENTINEL(object): pass
 
 class PortAgent(Greenlet):
-    def __init__(self, options):
+    def __init__(self, cfg, cmdproc):
         super(PortAgent, self).__init__()
-        self.options = options
-        self.cmdproc = CmdProcessor()
+        self.cfg = cfg
+        self.cmdproc = cmdproc
         self.heartbeat_event = Event()
         for val in self.__dict__.itervalues():
             if hasattr(val, '_is_a_command') and val._is_a_command is COMMAND_SENTINEL:
-                self.cmdproc.setCmd(val.__name__, None, val)
+                cmdproc.setCmd(val.__name__, None, val)
 
     @property
     def state(self):
@@ -91,9 +89,7 @@ class PortAgent(Greenlet):
             except: pass
 
     def state_startup(self):
-        self.cfg = Config(self.options, self.cmdproc)
         # start cmdserver; err if not cmd port
-        assert self.cfg.command_port is not None
         self.cmdserver = CmdServer(('localhost', self.cfg.command_port),
                                    self.cmdproc.processCmds, self.janitor)
         self.cmdserver.start()

@@ -5,17 +5,19 @@
 # those and or chain them somehow? what about gevent's link thing?
 
 from functools import partial
+import os.path
 
 from gevent.event import Event
 
 import logging
+
 
 class Config(object):
     cmds = {
         'heartbeat_interval': (int, None),
         'command_port': (int, None),
         'data_port': (int, None),
-        'pid_dir': (str, "/tmp"),
+        'pid_dir': (str, "/var/ooici/port_agent/pid"),
         'log_level': (str, 'warn'),
         'antelope_orb_name': (str, None),
         'antelope_orb_select': (str, None),

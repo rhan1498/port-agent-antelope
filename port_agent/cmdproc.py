@@ -16,6 +16,8 @@ class CmdUsageError(Exception):
     argument."""
     pass
 
+class UnknownCmd(Exception):
+    pass
 
 class CmdProcessor(object):
     def __init__(self):
@@ -39,7 +41,10 @@ class CmdProcessor(object):
 
     def _executeCmd(self, name, val, *args, **kwargs):
         log.info("Executing command %s %s" % (name, val))
-        converter, callback, cbargs, cbkwargs = self.cmds[name]
+        try:
+            converter, callback, cbargs, cbkwargs = self.cmds[name]
+        except KeyError:
+            raise UnknownCmd(name)
         if converter is not None:
             try:
                 val = converter(val)

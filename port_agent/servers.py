@@ -46,7 +46,7 @@ class StreamServer(gevent.server.StreamServer):
                 self.work(sock, addr)
         except SockClosed:
             pass
-        except socket.error:
+        except socket.error, e:
             socket_error = e
         except Exception, e:
             log.error("%s connection terminating due to exception %s" %

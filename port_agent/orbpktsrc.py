@@ -120,8 +120,9 @@ class OrbPktSrc(Greenlet):
         """
         queue = Queue(maxsize=MAX_QUEUE_SIZE)
         self._queues.add(queue)
-        yield proxy(queue)
-
-        # Stop publishing
-        self._queues.remove(queue)
+        try:
+            yield proxy(queue)
+        finally:
+            # Stop publishing
+            self._queues.remove(queue)
 

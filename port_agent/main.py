@@ -25,6 +25,7 @@ def get_pidfile(options):
 
 def start_port_agent(options):
     # DO NOT IMPORT THESE BEFORE ENTERING CONTEXT
+#    import gevent
     from config import Config
     from port_agent import PortAgent
     from ooi.logging import config, log
@@ -34,6 +35,10 @@ def start_port_agent(options):
     cmdproc = CmdProcessor()
     cfg = Config(options, cmdproc)
     agent = PortAgent(cfg, cmdproc)
+# NOTE Last time I tested these handlers, Python would crash hard if signaled
+# while having an active data connection.
+#    gevent.signal(signal.SIGTERM, agent.kill)
+#    gevent.signal(signal.SIGINT, agent.kill)
     agent.start()
     agent.join()
     if not agent.successful():

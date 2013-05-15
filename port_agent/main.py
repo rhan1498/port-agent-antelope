@@ -8,7 +8,8 @@ import signal
 
 from daemon import DaemonContext
 
-from lockfile import FileLock
+from lockfile import LockFailed
+from lockfile.pidlockfile import PIDLockFile
 
 from cmdproc import CmdProcessor, UnknownCmd
 
@@ -21,6 +22,24 @@ def get_pidfile(options):
     path = os.path.join(options.pid_dir, filename)
     return path
 
+
+def start_port_agent(options):
+    # DO NOT IMPORT THESE BEFORE ENTERING CONTEXT
+    from config import Config
+    from port_agent import PortAgent
+    from ooi.logging import config, log
+    config.add_configuration('logging.yaml')
+    log.info("Starting")
+    # get a fresh cmdproc
+    cmdproc = CmdProcessor()
+    cfg = Config(options, cmdproc)
+    agent = PortAgent(cfg, cmdproc)
+    agent.start()
+    agent.join()
+    if not agent.successful():
+        log.critical("EXIT_FAILURE")
+        return 1
+    return 0
 
 def main(args=None):
     if args is None:
@@ -64,11 +83,11 @@ def main(args=None):
         with open(get_pidfile(options)) as f:
             pid = int(f.read().strip())
         print "sending SIGINT to pid %d" % pid
-        os.kill(pid, signal.SIGINT)
+        os.kill(pid, signal.SIGTERM)
         return 0
 
     context = DaemonContext(
-        pidfile = FileLock(get_pidfile(options)),
+        pidfile = PIDLockFile(get_pidfile(options)),
         working_directory = os.getcwd(),
     )
 
@@ -77,22 +96,11 @@ def main(args=None):
         context.stdout = sys.stdout
         context.stderr = sys.stderr
 
-    with context:
-        # DO NOT IMPORT THESE BEFORE ENTERING CONTEXT
-        from config import Config
-        from port_agent import PortAgent
-        from ooi.logging import config, log
-        config.add_configuration('logging.yaml')
-        log.info("Starting")
-        # get a fresh cmdproc
-        cmdproc = CmdProcessor()
-        cfg = Config(options, cmdproc)
-        agent = PortAgent(cfg, cmdproc)
-        agent.start()
-        agent.join()
-        if not agent.successful():
-            log.critical("EXIT_FAILURE")
-            return 1
-        return 0
+    try:
+        with context:
+            return start_port_agent(options)
+    except LockFailed:
+        print "Failed to lock PID file %r" % get_pidfile(options)
+        return 1
 
     raise Exception("This should be unreachable")

@@ -46,6 +46,30 @@ def start_port_agent(options):
         return 1
     return 0
 
+def send_commands(options):
+    import socket
+    import packet
+    import ntp
+    sock = socket.create_connection((options.host, options.command_port), 10)
+    cmdstr = '\n'.join(options.command)
+    pkt = packet.makepacket(packet.MSG_TYPE_PORT_AGENT_CMD, ntp.now(), cmdstr)
+    sock.sendall(pkt)
+    headerbuf = bytearray()
+    while len(headerbuf) < packet.HEADER_SIZE:
+        bytes = sock.recv(packet.HEADER_SIZE - len(headerbuf))
+        if len(bytes) == 0: raise Exception("Peer disconnected")
+        headerbuf.extend(bytes)
+    pkt = packet.ReceivedPacket(headerbuf)
+    databuf = bytearray()
+    datasize = pkt.pktsize - packet.HEADER_SIZE
+    while len(databuf) < datasize:
+        bytes = sock.recv(datasize - len(databuf))
+        if len(bytes) == 0: raise Exception("Peer disconnected")
+        databuf.extend(bytes)
+    pkt.validate(databuf)
+    print 'RX Packet: ', pkt
+
+
 def main(args=None):
     if args is None:
         args = sys.argv
@@ -64,6 +88,10 @@ def main(args=None):
 #                help='identifiction for the port agent process. Ignored in the port agent process')
     op.add_option("-p", "--command_port", action="store", type='int',
                     help='Observatory command port number')
+    op.add_option("-C", "--command", action="append",
+                    help='Command to send to a running port agent')
+    op.add_option("-H", "--host", action="store", default='localhost',
+                    help='Host to send commands to')
     (options, args) = op.parse_args(args[1:])
 
     # We can't import the config module until AFTER we enter the daemon
@@ -83,6 +111,10 @@ def main(args=None):
     if not options.command_port:
         print "Must specify command_port on command line or in conffile"
         return 1
+
+    if options.command:
+        send_commands(options)
+        return 0
 
     if options.kill:
         with open(get_pidfile(options)) as f:

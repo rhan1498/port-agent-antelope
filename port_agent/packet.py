@@ -47,9 +47,19 @@ header_struct = Struct(HEADER_FORMAT)
 HEADER_SIZE = header_struct.size
 MAX_PACKET_SIZE = 2**16
 
-MSG_TYPE_INSTRUMENT_DATA = 1
-MSG_TYPE_PORT_AGENT_CMD = 3
-MSG_TYPE_HEARTBEAT = 7
+class PacketType:
+    UNKNOWN = 0
+    DATA_FROM_INSTRUMENT = 1
+    DATA_FROM_DRIVER = 2
+    PORT_AGENT_COMMAND = 3
+    PORT_AGENT_STATUS = 4
+    PORT_AGENT_FAULT = 5
+    INSTRUMENT_COMMAND = 6
+    PORT_AGENT_HEARTBEAT = 7
+
+MSG_TYPE_INSTRUMENT_DATA = PacketType.DATA_FROM_INSTRUMENT
+MSG_TYPE_PORT_AGENT_CMD = PacketType.PORT_AGENT_COMMAND
+MSG_TYPE_HEARTBEAT = PacketType.PORT_AGENT_HEARTBEAT 
 
 class HeaderSizeError(Exception): pass
 class SyncError(Exception): pass
@@ -149,3 +159,6 @@ class ReceivedPacket(object):
         if rxchecksum != self.checksum:
             raise ChecksumError(rxchecksum)
 
+    def __str__(self):
+        return "Type: %s, Timestamp: %s, Data: %r" % (
+            self.msgtype, self.timestamp, self.data)

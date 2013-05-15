@@ -12,17 +12,9 @@ from servers import DataServer, CmdServer
 import ntp
 from orbpkt2dict import orbpkt2dict
 from orbpktsrc import OrbPktSrc
-from packet import makepacket
+from packet import makepacket, PacketType
 
-
-STATES = [
-    'STATE_UNKNOWN',
-    'STATE_STARTUP',
-    'STATE_UNCONFIGURED',
-    'STATE_CONFIGURED',
-    'STATE_CONNECTED',
-    'STATE_DISCONNECTED',
-]
+__version__ = 'port-agent-antelope 0.0.1'
 
 BASE_FILENAME = "port_agent"
 
@@ -35,7 +27,6 @@ def transform(orbpkt):
 class OrbPktSrcError(Exception): pass
 
 
-class COMMAND_SENTINEL(object): pass
 
 class PortAgent(Greenlet):
     def __init__(self, cfg, cmdproc):
@@ -43,9 +34,17 @@ class PortAgent(Greenlet):
         self.cfg = cfg
         self.cmdproc = cmdproc
         self.heartbeat_event = Event()
-        for val in self.__dict__.itervalues():
-            if hasattr(val, '_is_a_command') and val._is_a_command is COMMAND_SENTINEL:
-                cmdproc.setCmd(val.__name__, None, val)
+        self.cmdproc.setCmd('get_state', None, self.get_state)
+        self.cmdproc.setCmd('ping', None, self.ping)
+        self.cmdproc.setCmd('shutdown', None, self.shutdown)
+        from pprint import pformat
+        log.debug("cmdproc cmds: %s" % pformat(cmdproc.cmds))
+        self.states = {
+            self.state_startup: 'STARTUP',
+            self.state_unconfigured: 'UNCONFIGURED',
+            self.state_configured: 'CONFIGURED',
+            self.state_connected: 'CONNECTED',
+        }
 
     @property
     def state(self):
@@ -74,22 +73,26 @@ class PortAgent(Greenlet):
     def _run(self):
         try:
             self.state = self.state_startup
-            spawn(self.heartbeat_timer).link_exception(self.janitor)
             while True:
                 self.state = self.state()
         except Exception:
             log.critical("PortAgent terminating due to exception", exc_info=True)
             raise
         finally:
+            log.debug("Killing orbpkt src")
             try: self.orbpktsrc.kill()
             except: pass
+            log.debug("Stopping dataserver")
             try: self.dataserver.stop()
             except: pass
+            log.debug("Stopping cmdserver")
             try: self.cmdserver.stop()
             except: pass
+            log.debug("PortAgent finally done")
 
     def state_startup(self):
         # start cmdserver; err if not cmd port
+        spawn(self.heartbeat_timer).link_exception(self.janitor)
         self.cmdserver = CmdServer(('localhost', self.cfg.command_port),
                                    self.cmdproc.processCmds, self.janitor)
         self.cmdserver.start()
@@ -131,17 +134,17 @@ class PortAgent(Greenlet):
         f._is_a_command = COMMAND_SENTINEL
         return f
 
-    @_cmd
-    def get_state(self, sock):
-        sock.sendall(makepacket(MSG_TYPE_STATUS, ntp.now(), self.state))
+    def get_state(self, val, sock):
+        statestr = self.states[self.state]
+        sock.sendall(makepacket(PacketType.PORT_AGENT_STATUS, ntp.now(), statestr))
 
-    @_cmd
-    def ping(self, sock):
-        sock.sendall(makepacket(MSG_TYPE_HEARTBEAT, ntp.now(), ''))
+    def ping(self, val, sock):
+        msg = "pong. version: " + __version__
+        sock.sendall(makepacket(PacketType.PORT_AGENT_STATUS, ntp.now(), msg))
 
-    @_cmd
-    def shutdown(self, sock):
-        gevent.shutdown()
+    def shutdown(self, val, sock):
+        sock.close()
+        self.kill()
 
     # no state_disconnected; orbreapthr doesn't ever disconnect or even report
     # errors; there are various approaches we could take to try to beat it into

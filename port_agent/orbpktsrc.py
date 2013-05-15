@@ -33,7 +33,7 @@ class GilReleaseNotSetError(Exception): pass
 if 'ANTELOPE_PYTHON_GILRELEASE' not in os.environ:
     raise GilReleaseNotSetError("ANTELOPE_PYTHON_GILRELEASE not in environment")
 
-MAX_QUEUE_SIZE = 100
+MAX_QUEUE_SIZE = 1000
 
 class OrbPktSrc(Greenlet):
     """Gevent based orb packet publisher.
@@ -56,7 +56,7 @@ class OrbPktSrc(Greenlet):
 
     """
     def __init__(self, srcname, select=None, reject=None, after=-1, timeout=-1,
-                 queuesize=100, transformation=None):
+                 queuesize=MAX_QUEUE_SIZE, transformation=None):
         Greenlet.__init__(self)
         self.srcname = srcname
         self.select = select

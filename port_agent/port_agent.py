@@ -109,7 +109,6 @@ class PortAgent(Greenlet):
             srcname = self.cfg.antelope_orb_name,
             select = self.cfg.antelope_orb_select,
             reject = self.cfg.antelope_orb_reject,
-            timeout = 1,
             transformation = transform
         )
         self.orbpktsrc.link_exception(self.janitor)
@@ -143,7 +142,6 @@ class PortAgent(Greenlet):
         sock.sendall(makepacket(PacketType.PORT_AGENT_STATUS, ntp.now(), msg))
 
     def shutdown(self, val, sock):
-        sock.close()
         self.kill()
 
     # no state_disconnected; orbreapthr doesn't ever disconnect or even report

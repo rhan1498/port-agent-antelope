@@ -55,8 +55,7 @@ class OrbPktSrc(Greenlet):
             return dumps(packet)
 
     """
-    def __init__(self, srcname, select=None, reject=None, after=-1, timeout=-1,
-                 queuesize=MAX_QUEUE_SIZE, transformation=None):
+    def __init__(self, srcname, select=None, reject=None, transformation=None):
         Greenlet.__init__(self)
         self.srcname = srcname
         self.select = select
@@ -66,24 +65,36 @@ class OrbPktSrc(Greenlet):
 
     def _run(self):
         try:
-            threadpool = ThreadPool(maxsize=1)
             args = self.srcname, self.select, self.reject
-            with OrbreapThr(*args, timeout=1) as orbreapthr:
+            # TODO Review this queue size
+            # TODO Review reasoning behind using OrbreapThr vs. normal ORB API
+            # I think it had something to do with orb.reap() blocking forever
+            # on comms failures; maybe we could create our own orbreapthr
+            # implementation?
+            with OrbreapThr(*args, timeout=1, queuesize=10000) as orbreapthr:
                 log.info("Connected to ORB %s %s %s" % (self.srcname, self.select,
                                                         self.reject))
-                while True:
-                    try:
-                        success, value = threadpool.spawn(
-                                wrap_errors, (Exception,), orbreapthr.get, [], {}).get()
-                        timestamp = ntp.now()
-                        if not success:
-                            raise value
-                    except (Timeout, NoData):
-                        pass
-                    else:
-                        if value is None:
-                            raise Exception('Nothing to publish')
-                        self._publish(value, timestamp)
+                threadpool = ThreadPool(maxsize=1)
+                try:
+                    while True:
+                        try:
+                            success, value = threadpool.spawn(
+                                    wrap_errors, (Exception,), orbreapthr.get, [], {}).get()
+                            timestamp = ntp.now()
+                            if not success:
+                                raise value
+                        except (Timeout, NoData), e:
+                            log.debug("orbreapthr.get exception %r" % type(e))
+                            pass
+                        else:
+                            if value is None:
+                                raise Exception('Nothing to publish')
+                            self._publish(value, timestamp)
+                finally:
+                    # This blocks until all threads in the pool return. That's
+                    # critical; if the orbreapthr dies before the get thread,
+                    # segfaults ensue.
+                    threadpool.kill()
         except Exception, e:
             log.error("OrbPktSrc terminating due to exception", exc_info=True)
             raise

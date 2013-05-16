@@ -35,8 +35,6 @@ class PortAgent(Greenlet):
         self.cmdproc.setCmd('get_state', None, self.get_state)
         self.cmdproc.setCmd('ping', None, self.ping)
         self.cmdproc.setCmd('shutdown', None, self.shutdown)
-        from pprint import pformat
-        log.debug("cmdproc cmds: %s" % pformat(cmdproc.cmds))
         self.states = {
             self.state_startup: 'STARTUP',
             self.state_unconfigured: 'UNCONFIGURED',

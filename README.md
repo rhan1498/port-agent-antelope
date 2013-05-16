@@ -26,7 +26,8 @@ points to the antelope python package dir. Something like:
 	echo /opt/antelope/5.3pre/data/python > ve/lib/python2.7/site-packages/antelope5.3pre.pth
 
 Before activating the virtual environment, source the Antelope environment set
-up script. This sets up a bunch of important environment variables. E.g.:
+up script. This sets up a bunch of important environment variables. (Is this really 
+important?) E.g.:
 
     . /opt/antelope/5.3pre/setup.sh
 
@@ -46,11 +47,12 @@ variable in your environment. E.g.:
 
 Now it should be possible to run the port agent.
 
-    port_agent_antelope -c config_test -v -s
+    ./port_agent_antelope -c config_test -s
 
 You can test it by sending it a command from another shell:
 
-    port_agent_antelope -c config_test -v -s -C ping
+	./port_agent_antelope -c config_test -C ping
+	RX Packet:  Type: 4, Timestamp: 3577658548.7, Data: bytearray(b'pong. version: port-agent-antelope 0.0.1')
 
 You should see a reply packet with the port agent version number.
 
@@ -63,17 +65,11 @@ gevent is the only dependency that I know requires a particular version, 1.0rc2
 from github. Newer version may work as well. Older versions most likely will
 not as they lack the threadpool module.
 
-### core deps
-
-gevent==1.0dev (really 1.0rc2)
-greenlet==0.4.0
-lockfile==0.9.1
-python-daemon==1.6
-antelope 5.3
-
-### from ooi utilities
-
-utilities==2013.05.01
-PyYAML==3.10
-graypy==0.2.8
-
+	gevent==1.0dev (really 1.0rc2)
+	greenlet==0.4.0
+	lockfile==0.9.1
+	python-daemon==1.6
+	antelope 5.3
+	utilities==2013.05.01
+	PyYAML==3.10
+	graypy==0.2.8

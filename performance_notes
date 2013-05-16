@@ -3,7 +3,8 @@ Most of the CPU time is eaten up by the following activities:
 2. Converting Packets to dicts
 3. Pickling packets
 
-If performance is unacceptable, I suggest reimplimenting these tasks in Cython.
+If performance is unacceptable, I suggest reimplimenting these tasks in Cython,
+and using a simpler binary encoding instead of pickle.
 
 
 Wed May 15 20:49:44 2013    stats

@@ -9,8 +9,8 @@ import gevent.server
 
 from ooi.logging import log
 
-from packet import makepacket, ReceivedPacket, HEADER_SIZE, MAX_PACKET_SIZE, \
-                   MSG_TYPE_INSTRUMENT_DATA, MSG_TYPE_HEARTBEAT
+from packet import (makepacket, ReceivedPacket, HEADER_SIZE, MAX_PACKET_SIZE,
+                    PacketType)
 import ntp
 
 
@@ -71,7 +71,8 @@ class DataServer(StreamServer):
             with self.subscription() as queue:
                 while True:
                     orbpkt, timestamp = queue.get()
-                    pkt = makepacket(MSG_TYPE_INSTRUMENT_DATA, timestamp, orbpkt)
+                    pkt = makepacket(PacketType.DATA_FROM_INSTRUMENT,
+                                     timestamp, orbpkt)
                     with socklock:
                         sock.sendall(pkt)
         finally:
@@ -83,7 +84,8 @@ class DataServer(StreamServer):
             with closing(sock):
                 while True:
                     self.heartbeat_event.wait()
-                    pkt = makepacket(MSG_TYPE_HEARTBEAT, ntp.now(), '')
+                    pkt = makepacket(PacketType.PORT_AGENT_HEARTBEAT,
+                                     ntp.now(), '')
                     with socklock:
                         sock.sendall(pkt)
                     sleep()

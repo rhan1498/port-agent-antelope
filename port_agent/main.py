@@ -46,20 +46,20 @@ def start_port_agent(options):
 
 def send_commands(options):
     import socket
-    import packet
+    from packet import makepacket, PacketType, HEADER_SIZE, ReceivedPacket
     import ntp
     sock = socket.create_connection((options.host, options.command_port), 10)
     cmdstr = '\n'.join(options.command)
-    pkt = packet.makepacket(packet.MSG_TYPE_PORT_AGENT_CMD, ntp.now(), cmdstr)
+    pkt = makepacket(PacketType.PORT_AGENT_COMMAND, ntp.now(), cmdstr)
     sock.sendall(pkt)
     headerbuf = bytearray()
-    while len(headerbuf) < packet.HEADER_SIZE:
-        bytes = sock.recv(packet.HEADER_SIZE - len(headerbuf))
+    while len(headerbuf) < HEADER_SIZE:
+        bytes = sock.recv(HEADER_SIZE - len(headerbuf))
         if len(bytes) == 0: raise Exception("Peer disconnected")
         headerbuf.extend(bytes)
-    pkt = packet.ReceivedPacket(headerbuf)
+    pkt = ReceivedPacket(headerbuf)
     databuf = bytearray()
-    datasize = pkt.pktsize - packet.HEADER_SIZE
+    datasize = pkt.pktsize - HEADER_SIZE
     while len(databuf) < datasize:
         bytes = sock.recv(datasize - len(databuf))
         if len(bytes) == 0: raise Exception("Peer disconnected")

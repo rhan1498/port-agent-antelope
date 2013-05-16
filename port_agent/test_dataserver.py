@@ -12,7 +12,7 @@ from gevent.event import Event
 
 from cmdproc import CmdProcessor
 from servers import DataServer, CmdServer
-from packet import ReceivedPacket, makepacket, MSG_TYPE_PORT_AGENT_CMD
+from packet import ReceivedPacket, makepacket, PacketType
 
 DATA_PORT = 54321
 
@@ -90,7 +90,7 @@ class Test_CmdServer(unittest.TestCase):
                 self.ds.start()
                 sock = create_connection(('127.0.0.1', DATA_PORT), timeout=2)
                 with closing(sock):
-                    sock.sendall(makepacket(MSG_TYPE_PORT_AGENT_CMD, 0.0,
+                    sock.sendall(makepacket(PacketType.PORT_AGENT_COMMAND, 0.0,
                                             'cmd\ncmd2 123\n'))
                 sleep(0)
             finally:

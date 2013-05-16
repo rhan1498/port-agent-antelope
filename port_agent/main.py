@@ -12,6 +12,7 @@ from lockfile import LockFailed
 from lockfile.pidlockfile import PIDLockFile
 
 from cmdproc import CmdProcessor, UnknownCmd
+from version import __version__
 
 
 BASE_FILENAME = 'port_agent'
@@ -71,25 +72,26 @@ def send_commands(options):
 def main(args=None):
     if args is None:
         args = sys.argv
-    op = OptionParser()
+    op = OptionParser(version=__version__)
     op.add_option("-c", "--conffile", action="store",
-                    help='Path to port_agent config file')
-    op.add_option("-v", "--verbose", action="store_true")
+                    help='Path to port_agent config file.')
+    op.add_option("-v", "--verbose", action="store_true",
+                    help='Set loglevel to debug.')
     op.add_option("-k", "--kill", action="store_true",
-                    help='Kill a daemon processes associated to a command port')
+                    help='Kill a daemon processes associated to a command port.')
     op.add_option("-s", "--single", action="store_true",
-                    help='Run in single thread mode. Do not detatch')
-    op.add_option("-n", "--version", action="store_true")
+                    help='Run in foreground; do not daemonize.')
+# Bill French says we don't need this.
 #    op.add_option("-y", "--ppid", action="store", type='int',
 #                    help='Poison pill, if parent process is gone then shutdown')
-#    op.add_option("-i", "--identity", action="store",
-#                help='identifiction for the port agent process. Ignored in the port agent process')
+    op.add_option("-i", "--identity", action="store",
+                help='identifiction for the port agent process. Ignored in the port agent process.')
     op.add_option("-p", "--command_port", action="store", type='int',
-                    help='Observatory command port number')
+                    help='Observatory command port number. Required here or in conffile.')
     op.add_option("-C", "--command", action="append",
-                    help='Command to send to a running port agent')
+                    help='Send command to remote port agent and exit. May be specified multiple times.')
     op.add_option("-H", "--host", action="store", default='localhost',
-                    help='Host to send commands to')
+                    help='Host to command. Only significant with -C option. Defaults to localhost.')
     (options, args) = op.parse_args(args[1:])
 
     # We can't import the config module until AFTER we enter the daemon

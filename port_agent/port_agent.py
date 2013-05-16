@@ -14,9 +14,7 @@ from orbpkt2dict import orbpkt2dict
 from orbpktsrc import OrbPktSrc
 from packet import makepacket, PacketType
 
-__version__ = 'port-agent-antelope 0.0.1'
-
-BASE_FILENAME = "port_agent"
+from version import __version__
 
 
 def transform(orbpkt):

@@ -115,7 +115,7 @@ class CmdServer(StreamServer):
                     raise SockClosed()
                 bytesleft -= bytesrx
             pkt = ReceivedPacket(headerbuf)
-            datasize = pkt.pktsize - HEADER_SIZE
+            datasize = pkt.datasize
             bytesleft = datasize
             databuf = bytearray(bytesleft)
             dataview = memoryview(databuf)

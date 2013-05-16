@@ -59,7 +59,7 @@ def send_commands(options):
         headerbuf.extend(bytes)
     pkt = ReceivedPacket(headerbuf)
     databuf = bytearray()
-    datasize = pkt.pktsize - HEADER_SIZE
+    datasize = pkt.datasize
     while len(databuf) < datasize:
         bytes = sock.recv(datasize - len(databuf))
         if len(bytes) == 0: raise Exception("Peer disconnected")

@@ -142,6 +142,7 @@ class ReceivedPacket(object):
         self.header = header
         (sync, self.msgtype, self.pktsize, self.checksum,
          self.timestamp) = unpack_header(header)
+        self.datasize = self.pktsize - HEADER_SIZE
         if sync != SYNC:
             raise SyncError(sync)
         # Set checksum to zero so we don't checksum the checksum

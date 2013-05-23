@@ -16,6 +16,7 @@ from packet import makepacket, PacketType
 
 from version import __version__
 
+LISTENING_ADDR = ''
 
 def transform(orbpkt):
     d = orbpkt2dict(orbpkt)
@@ -89,7 +90,7 @@ class PortAgent(Greenlet):
     def state_startup(self):
         # start cmdserver; err if not cmd port
         spawn(self.heartbeat_timer).link_exception(self.janitor)
-        self.cmdserver = CmdServer(('localhost', self.cfg.command_port),
+        self.cmdserver = CmdServer((LISTENING_ADDR, self.cfg.command_port),
                                    self.cmdproc.processCmds, self.janitor)
         self.cmdserver.start()
         return self.state_unconfigured
@@ -111,7 +112,7 @@ class PortAgent(Greenlet):
         self.orbpktsrc.start()
         # spawn data server
         self.dataserver = DataServer(
-                ('localhost', self.cfg.data_port),
+                (LISTENING_ADDR, self.cfg.data_port),
                 self.orbpktsrc.subscription,
                 self.heartbeat_event, self.janitor)
         self.dataserver.start()

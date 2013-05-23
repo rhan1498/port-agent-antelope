@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/bin/sh
 
-from port_agent.main import main
+export ANTELOPE_PYTHON_GILRELEASE=1
 
-exit(main())
+python -c 'from port_agent.main import main; exit(main())' $*
 

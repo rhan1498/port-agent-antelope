@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from cPickle import dumps
+import logging
 
 import gevent
 from gevent import Greenlet, spawn, sleep
@@ -16,6 +17,8 @@ from packet import makepacket, PacketType
 
 from version import __version__
 
+LISTENING_ADDR = ''
+
 
 def transform(orbpkt):
     d = orbpkt2dict(orbpkt)
@@ -23,7 +26,6 @@ def transform(orbpkt):
 
 
 class OrbPktSrcError(Exception): pass
-
 
 
 class PortAgent(Greenlet):
@@ -35,8 +37,7 @@ class PortAgent(Greenlet):
         self.cmdproc.setCmd('get_state', None, self.get_state)
         self.cmdproc.setCmd('ping', None, self.ping)
         self.cmdproc.setCmd('shutdown', None, self.shutdown)
-        from pprint import pformat
-        log.debug("cmdproc cmds: %s" % pformat(cmdproc.cmds))
+        self.cmdproc.setCmd('log_level', str, self.log_level)
         self.states = {
             self.state_startup: 'STARTUP',
             self.state_unconfigured: 'UNCONFIGURED',
@@ -91,7 +92,7 @@ class PortAgent(Greenlet):
     def state_startup(self):
         # start cmdserver; err if not cmd port
         spawn(self.heartbeat_timer).link_exception(self.janitor)
-        self.cmdserver = CmdServer(('localhost', self.cfg.command_port),
+        self.cmdserver = CmdServer((LISTENING_ADDR, self.cfg.command_port),
                                    self.cmdproc.processCmds, self.janitor)
         self.cmdserver.start()
         return self.state_unconfigured
@@ -113,7 +114,7 @@ class PortAgent(Greenlet):
         self.orbpktsrc.start()
         # spawn data server
         self.dataserver = DataServer(
-                ('localhost', self.cfg.data_port),
+                (LISTENING_ADDR, self.cfg.data_port),
                 self.orbpktsrc.subscription,
                 self.heartbeat_event, self.janitor)
         self.dataserver.start()
@@ -127,10 +128,6 @@ class PortAgent(Greenlet):
         self.dataserver.stop()
         return self.state_configured
 
-    def _cmd(f):
-        f._is_a_command = COMMAND_SENTINEL
-        return f
-
     def get_state(self, val, sock):
         statestr = self.states[self.state]
         sock.sendall(makepacket(PacketType.PORT_AGENT_STATUS, ntp.now(), statestr))
@@ -141,6 +138,21 @@ class PortAgent(Greenlet):
 
     def shutdown(self, val, sock):
         self.kill()
+
+    def log_level(self, val, sock):
+        levels = {
+                    'error': logging.ERROR,
+                    'warn': logging.WARNING,
+                    'info': logging.INFO,
+                    'debug': logging.DEBUG,
+                    'mesg': logging.DEBUG,
+                }
+        try:
+            level = levels[val]
+        except KeyError:
+            log.error("Unknown logging level %s" % val)
+        else:
+            logging.getLogger().setLevel(levels[val])
 
     # no state_disconnected; orbreapthr doesn't ever disconnect or even report
     # errors; there are various approaches we could take to try to beat it into

@@ -2,21 +2,23 @@
 
 from ooi.logging import log
 
-class CmdParseError(Exception):
+class CmdProcError(Exception): pass
+
+class CmdParseError(CmdProcError):
     """Raised when the command string cannot be parsed."""
     pass
 
-class ValueConversionError(Exception):
+class ValueConversionError(CmdProcError):
     """Raised when a value string cannot be converted by the specified
     conversion function."""
     pass
 
-class CmdUsageError(Exception):
+class CmdUsageError(CmdProcError):
     """Raised when an argument is passed to a command which does not accept an
     argument."""
     pass
 
-class UnknownCmd(Exception):
+class UnknownCmd(CmdProcError):
     pass
 
 class CmdProcessor(object):
@@ -63,5 +65,8 @@ class CmdProcessor(object):
 
     def processCmds(self, cmdsstr, *args, **kwargs):
         for cmdstr in cmdsstr.strip().split('\n'):
-            self.processCmd(cmdstr, *args, **kwargs)
+            try:
+                self.processCmd(cmdstr, *args, **kwargs)
+            except CmdProcError, e:
+                log.error("Error processing command: %s" % e)
 

@@ -30,7 +30,12 @@ def start_port_agent(options):
     from config import Config
     from port_agent import PortAgent
     from ooi.logging import config, log
-    config.add_configuration('logging.yaml')
+# This is a problem
+# 1. Where should it get installed?
+# 2. Should it be a resource?
+# 3. How to configured where to read it from?
+# 4. Add new cmd to set it?
+#    config.add_configuration('logging.yaml')
     log.info("Starting")
     # get a fresh cmdproc
     cmdproc = CmdProcessor()

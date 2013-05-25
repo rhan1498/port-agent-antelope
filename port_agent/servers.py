@@ -105,26 +105,13 @@ class CmdServer(StreamServer):
         super(CmdServer, self).__init__(addr, janitor)
 
     def work(self, sock, addr):
+        cmdstr = ''
         while True:
-            headerbuf = bytearray(HEADER_SIZE)
-            headerview = memoryview(headerbuf)
-            bytesleft = HEADER_SIZE
-            while bytesleft:
-                bytesrx = sock.recv_into(headerview[HEADER_SIZE - bytesleft:], bytesleft)
-                if bytesrx <= 0:
-                    raise SockClosed()
-                bytesleft -= bytesrx
-            pkt = ReceivedPacket(headerbuf)
-            datasize = pkt.datasize
-            bytesleft = datasize
-            databuf = bytearray(bytesleft)
-            dataview = memoryview(databuf)
-            while bytesleft:
-                bytesrx = sock.recv_into(dataview[datasize - bytesleft:], bytesleft)
-                if bytesrx <= 0:
-                    raise SockClosed()
-                bytesleft -= bytesrx
-            pkt.validate(databuf)
-            # check msg type
-            self.process_cmds(str(databuf), sock)
+            rxstr = sock.recv(1024)
+            if len(rxstr) == 0:
+                self.process_cmds(cmdstr, sock)
+                sock.close()
+                return
+            cmdstr += rxstr
+
 

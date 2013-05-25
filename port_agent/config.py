@@ -31,12 +31,14 @@ class Config(object):
     ])
 
     DATASERVER_DEPS = [
-        'heartbeat_interval',
         'data_port',
         'antelope_orb_name',
         'antelope_orb_select',
         'antelope_orb_reject',
     ]
+
+    def setval(self, name, val, *args, **kwargs):
+            setattr(self, name, val)
 
     def __init__(self, options, cmdproc):
         self.configuredevent = Event()
@@ -48,7 +50,7 @@ class Config(object):
             setattr(self, name, default)
             # Create command to set attr
             # cmdserver sends sock after val; will that mess this up?
-            setval = partial(setattr, self, name)
+            setval = partial(self.setval, name)
             cmdproc.setCmd(name, converter, setval)
 
         # update from config file

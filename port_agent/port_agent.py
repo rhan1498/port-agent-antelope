@@ -124,7 +124,7 @@ class PortAgent(Greenlet):
     def state_connected(self):
         # on dataserver config update event
         self.cfg.dataserverconfigupdate.wait()
-        self.orbreapthr.kill()
+        self.orbpktsrc.kill()
         self.dataserver.stop()
         return self.state_configured
 

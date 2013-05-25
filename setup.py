@@ -9,5 +9,6 @@ setup(name='port-agent-antelope',
       author_email='contactooici@oceanobservatories.org',
       url='https://github.com/ooici/port-agent-antelope',
       packages=['port_agent'],
+      scripts=['port_agent_antelope'],
      )
 

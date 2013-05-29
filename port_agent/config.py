@@ -67,10 +67,6 @@ class Config(object):
             for line in file:
                 self.cmdproc.processCmd(line)
 
-    def isConfigured(self):
-        return None not in (self.heartbeat_interval, self.command_port,
-                            self.data_port, self.antelope_orb_name)
-
     def __setattr__(self, name, value):
         super(Config, self).__setattr__(name, value)
         if not self.configuredevent.isSet():

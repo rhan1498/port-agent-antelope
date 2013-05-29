@@ -37,14 +37,6 @@ class Test_readConfig(unittest.TestCase):
             self.cfg.readConfig(tmpfile.name)
         self.assertEquals(self.cfg.heartbeat_interval, 123)
 
-    def test_isConfigured(self):
-        self.assertFalse(self.cfg.isConfigured())
-        self.cfg.heartbeat_interval = 1
-        self.cfg.command_port = 1
-        self.cfg.data_port = 1
-        self.cfg.antelope_orb_name = ''
-        self.assertTrue(self.cfg.isConfigured())
-
 class Test_events(unittest.TestCase):
     def setUp(self):
         self.cp = CmdProcessor()

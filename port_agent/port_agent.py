@@ -37,7 +37,6 @@ class PortAgent(Greenlet):
         self.cmdproc.setCmd('get_state', None, self.get_state)
         self.cmdproc.setCmd('ping', None, self.ping)
         self.cmdproc.setCmd('shutdown', None, self.shutdown)
-        self.cmdproc.setCmd('log_level', str, self.log_level)
         self.states = {
             self.state_startup: 'STARTUP',
             self.state_unconfigured: 'UNCONFIGURED',
@@ -138,21 +137,6 @@ class PortAgent(Greenlet):
 
     def shutdown(self, val, sock):
         self.kill()
-
-    def log_level(self, val, sock):
-        levels = {
-                    'error': logging.ERROR,
-                    'warn': logging.WARNING,
-                    'info': logging.INFO,
-                    'debug': logging.DEBUG,
-                    'mesg': logging.DEBUG,
-                }
-        try:
-            level = levels[val]
-        except KeyError:
-            log.error("Unknown logging level %s" % val)
-        else:
-            logging.getLogger().setLevel(levels[val])
 
     # no state_disconnected; orbreapthr doesn't ever disconnect or even report
     # errors; there are various approaches we could take to try to beat it into

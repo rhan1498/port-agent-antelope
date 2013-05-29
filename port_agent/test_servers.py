@@ -90,8 +90,7 @@ class Test_CmdServer(unittest.TestCase):
                 self.ds.start()
                 sock = create_connection(('127.0.0.1', DATA_PORT), timeout=2)
                 with closing(sock):
-                    sock.sendall(makepacket(PacketType.PORT_AGENT_COMMAND, 0.0,
-                                            'cmd\ncmd2 123\n'))
+                    sock.sendall('cmd\ncmd2 123\n')
                 sleep(0)
             finally:
                 self.ds.stop()

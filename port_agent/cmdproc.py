@@ -65,6 +65,8 @@ class CmdProcessor(object):
 
     def processCmds(self, cmdsstr, *args, **kwargs):
         for cmdstr in cmdsstr.strip().split('\n'):
+            if cmdstr == '':
+                continue
             try:
                 self.processCmd(cmdstr, *args, **kwargs)
             except CmdProcError, e:

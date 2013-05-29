@@ -100,6 +100,10 @@ class DataServer(StreamServer):
 
 
 class CmdServer(StreamServer):
+    # Note: It's not really clear how cmds are supposed to be framed. Looks
+    # like the PA and PAC work "on accident" by relying on 1:1 send/recv
+    # behavior, which is not correct with TCP. But whatever we'll do the same
+    # thing.
     def __init__(self, addr, process_cmds, janitor):
         self.process_cmds = process_cmds
         super(CmdServer, self).__init__(addr, janitor)
@@ -113,5 +117,4 @@ class CmdServer(StreamServer):
                 sock.close()
                 return
             cmdstr += rxstr
-
 

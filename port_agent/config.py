@@ -28,6 +28,7 @@ class Config(object):
         'antelope_orb_name': (str, None),
         'antelope_orb_select': (str, None),
         'antelope_orb_reject': (str, None),
+        'antelope_orb_after': (float, -1),
     }
 
     # TODO: What about command_port?
@@ -43,6 +44,7 @@ class Config(object):
         'antelope_orb_name',
         'antelope_orb_select',
         'antelope_orb_reject',
+        'antelope_orb_after',
     ]
 
     def setval(self, name, val, *args, **kwargs):

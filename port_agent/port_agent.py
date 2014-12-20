@@ -107,6 +107,7 @@ class PortAgent(Greenlet):
             srcname = self.cfg.antelope_orb_name,
             select = self.cfg.antelope_orb_select,
             reject = self.cfg.antelope_orb_reject,
+            after = self.cfg.antelope_orb_after,
             transformation = transform
         )
         self.orbpktsrc.link_exception(self.janitor)

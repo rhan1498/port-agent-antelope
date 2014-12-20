@@ -55,11 +55,12 @@ class OrbPktSrc(Greenlet):
             return dumps(packet)
 
     """
-    def __init__(self, srcname, select=None, reject=None, transformation=None):
+    def __init__(self, srcname, select=None, reject=None, transformation=None, after=-1):
         Greenlet.__init__(self)
         self.srcname = srcname
         self.select = select
         self.reject = reject
+        self.after = after
         self._queues = set()
         self.transformation = transformation
 
@@ -73,7 +74,7 @@ class OrbPktSrc(Greenlet):
             # implementation?
             with OrbreapThr(*args, timeout=1, queuesize=10000) as orbreapthr:
                 log.info("Connected to ORB %s %s %s" % (self.srcname, self.select,
-                                                        self.reject))
+                                                        self.reject, self.after))
                 threadpool = ThreadPool(maxsize=1)
                 try:
                     while True:

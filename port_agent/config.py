@@ -30,12 +30,14 @@ class Config(object):
         'antelope_orb_reject': (str, None),
     }
 
+    # TODO: What about command_port?
     CONFIG_DEPS = set([
         'heartbeat_interval',
         'data_port',
         'antelope_orb_name',
     ])
 
+    # When one of these changes, it signals the data server to restart
     DATASERVER_DEPS = [
         'data_port',
         'antelope_orb_name',

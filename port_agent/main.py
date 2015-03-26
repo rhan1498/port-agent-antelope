@@ -12,6 +12,7 @@ from lockfile import LockFailed
 from lockfile.pidlockfile import PIDLockFile
 
 from cmdproc import CmdProcessor, UnknownCmd
+from ooi.logging import log
 from version import __version__
 
 
@@ -54,7 +55,7 @@ def send_commands(options):
     import socket
     from packet import makepacket, PacketType, HEADER_SIZE, ReceivedPacket
     import ntp
-    sock = socket.create_connection((options.host, options.command_port), 10)
+    sock = socket.create_connection((options.host, options.command_port), 10, (options.host, options.command_port))
     cmdstr = '\n'.join(options.command)
     pkt = makepacket(PacketType.PORT_AGENT_COMMAND, ntp.now(), cmdstr)
     sock.sendall(pkt)

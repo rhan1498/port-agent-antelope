@@ -61,6 +61,7 @@ class CmdProcessor(object):
 
     def processCmd(self, cmdstr, *args, **kwargs):
         name, val = self._parseCmd(cmdstr)
+        print("processCmd name = %s, val = %s", name, val)
         self._executeCmd(name, val, *args, **kwargs)
 
     def processCmds(self, cmdsstr, *args, **kwargs):
